@@ -200,10 +200,9 @@ export function Sidebar() {
   };
 
   const [configOpen, setConfigOpen] = useState(false);
-  const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
-  const activeCompanyId = useActiveCompanyId();
-  const tenantLogoUrl = useTenantLogo(activeCompanyId);
-  const tenantBranding = useTenantBranding(activeCompanyId);
+  const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant, effectiveCompanyId } = useAuth();
+  const tenantLogoUrl = useTenantLogo(effectiveCompanyId);
+  const tenantBranding = useTenantBranding(effectiveCompanyId);
   const overdueCount = useOverdueCount();
   const unreadEmailCount = useUnreadEmailCount();
   
@@ -374,14 +373,23 @@ export function Sidebar() {
       )}>
         <div className="flex items-center gap-2 cursor-default min-w-0" onClick={(e) => e.preventDefault()}>
           {tenantLogoUrl ? (
-            <img
-              src={tenantLogoUrl}
-              alt="Tenant"
-              className={cn(
-                "transition-all duration-300 object-contain w-auto flex-shrink-0",
-                collapsed ? "h-8 max-w-[40px]" : "h-9 max-w-[140px]"
+            <div className="flex items-center gap-2 min-w-0">
+              <img
+                src={tenantLogoUrl}
+                alt="Tenant"
+                className={cn(
+                  "transition-all duration-300 object-contain w-auto flex-shrink-0",
+                  collapsed ? "h-8 max-w-[40px]" : "h-9 max-w-[100px]"
+                )}
+              />
+              {!collapsed && (
+                <span className={cn(
+                  "text-[13px] font-bold tracking-tight text-sidebar-foreground/90 truncate max-w-[100px] transition-all duration-300",
+                )}>
+                  {tenantBranding?.nome_fantasia || tenantBranding?.razao_social || "ACCORD"}
+                </span>
               )}
-            />
+            </div>
           ) : (
             <>
               <img
@@ -443,12 +451,9 @@ export function Sidebar() {
               location.pathname === "/accord-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
             style={location.pathname === "/accord-stack" ? { 
-              background: tenantBranding?.primary_color && (tenantBranding.accent_color || tenantBranding.secondary_color) 
-                ? `linear-gradient(135deg, ${tenantBranding.primary_color}, ${tenantBranding.accent_color || tenantBranding.secondary_color})`
-                : 'linear-gradient(135deg, #7A3FF2, #D94FD5)' 
-            } : tenantBranding?.primary_color ? {
-              color: tenantBranding.primary_color,
-              borderColor: `${tenantBranding.primary_color}33`
+              backgroundColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.15)` : undefined,
+              borderColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)` : undefined,
+              color: tenantBranding?.primary_color || undefined
             } : undefined}
           >
             <Zap className="h-3.5 w-3.5" />

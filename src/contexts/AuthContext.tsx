@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useMemo } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { setMonitoringUser, clearMonitoringUser } from "@/lib/monitoring";
@@ -79,6 +79,7 @@ interface AuthContextType {
   isGlobalMaster: boolean;
   isResellerTenant: boolean;
   activeCompanyId: string | null;
+  effectiveCompanyId: string | null;
   setActiveCompanyId: (id: string | null) => void;
   companies: CompanyOption[];
   activeCompany: CompanyOption | null;
@@ -115,12 +116,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // as reseller sees the reseller management UI in its own context.
   const isResellerTenant = !!(activeCompany?.is_reseller && activeCompany?.reseller_panel_enabled);
 
+  // Resolved tenant: the single source of truth for identity and data queries
+  const effectiveCompanyId = useMemo(() => {
+    if (!profile) return null;
+    
+    // Master users (global or tenant CEO) can use the active selection
+    if (isMaster) {
+      // Validate that the activeCompanyId is actually in their allowed list
+      if (activeCompanyId && companies.some(c => c.id === activeCompanyId)) {
+        return activeCompanyId;
+      }
+      return profile.company_id;
+    }
+    
+    return profile.company_id;
+  }, [profile, activeCompanyId, isMaster, companies]);
+
   const setActiveCompanyId = (id: string | null) => {
     setActiveCompanyIdState(id);
     if (id) {
       localStorage.setItem("accord_active_company", id);
+      window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { id } }));
     } else {
       localStorage.removeItem("accord_active_company");
+      window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { id: null } }));
     }
   };
 
@@ -289,6 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isGlobalMaster,
     isResellerTenant,
     activeCompanyId,
+    effectiveCompanyId,
     setActiveCompanyId,
     companies,
     activeCompany,

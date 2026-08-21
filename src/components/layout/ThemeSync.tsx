@@ -97,20 +97,20 @@ function readableForeground(bgHsl: string): string {
 
 // Default ACCORD brand HSL values (from index.css)
 const DEFAULTS = {
-  primary: "224 76% 53%",
+  primary: "263 87% 60%", // Standard Accord Indigo
   primaryGlow: "263 87% 60%",
-  sidebarBg: "224 62% 15%",
-  sidebarForeground: "220 20% 93%",
-  sidebarPrimary: "263 87% 60%",
-  sidebarAccent: "224 50% 20%",
-  sidebarBorder: "224 45% 18%",
-  ring: "224 76% 53%",
-  accent: "220 14% 93%",
-  accentForeground: "224 71% 7%",
+  sidebarBg: "251 41% 18%",
+  sidebarForeground: "250 25% 90%",
+  sidebarPrimary: "256 82% 64%",
+  sidebarAccent: "252 28% 24%",
+  sidebarBorder: "252 25% 28%",
+  ring: "263 87% 60%",
+  accent: "220 14% 92%",
+  accentForeground: "222 47% 8%",
 };
 
 export function ThemeSync() {
-  const { user, profile, loading, activeCompanyId, isMaster } = useAuth();
+  const { user, profile, loading, effectiveCompanyId, isMaster } = useAuth();
 
   // Theme sync (dark/light)
   useEffect(() => {
@@ -134,7 +134,7 @@ export function ThemeSync() {
 
   // Tenant brand colors sync
   useEffect(() => {
-    if (!activeCompanyId || !user) {
+    if (!effectiveCompanyId || !user) {
       applyBrandColors(null);
       return;
     }
@@ -143,7 +143,7 @@ export function ThemeSync() {
       const { data } = await supabase
         .from("companies")
         .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, servidor_id")
-        .eq("id", activeCompanyId)
+        .eq("id", effectiveCompanyId)
         .single();
 
       if (!data) {
@@ -156,7 +156,7 @@ export function ThemeSync() {
       // (servidor_id === null). If the master is operating on a child tenant, apply it.
       const isMasterTenantContext =
         isMaster &&
-        profile?.company_id === activeCompanyId &&
+        profile?.company_id === effectiveCompanyId &&
         (data as any).servidor_id === null;
 
       if (isMasterTenantContext) {
@@ -170,8 +170,12 @@ export function ThemeSync() {
 
     const handleBrandUpdate = () => fetchBrand();
     window.addEventListener("brand-colors-updated", handleBrandUpdate);
-    return () => window.removeEventListener("brand-colors-updated", handleBrandUpdate);
-  }, [activeCompanyId, user, isMaster, profile?.company_id]);
+    window.addEventListener("tenant-switched", handleBrandUpdate);
+    return () => {
+      window.removeEventListener("brand-colors-updated", handleBrandUpdate);
+      window.removeEventListener("tenant-switched", handleBrandUpdate);
+    };
+  }, [effectiveCompanyId, user, isMaster, profile?.company_id]);
 
   return null;
 }

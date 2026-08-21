@@ -25,7 +25,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { profile } = useAuth();
+  const { profile, loading, effectiveCompanyId } = useAuth();
   const hasAvatar = !!(profile as any)?.avatar_url;
   useActivityReminders();
   useEmailNotifications();
@@ -61,6 +61,14 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
     return () => document.documentElement.classList.remove("lock-scroll");
   }, [isAccordStackRoute]);
+
+  if (loading || !effectiveCompanyId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
   return (
     <BackNavigationProvider>

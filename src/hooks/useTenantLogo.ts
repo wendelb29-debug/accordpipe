@@ -9,17 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
  *   response from a previous tenant never overwrites the current one.
  * - Re-fetches when "brand-colors-updated" or "tenant-switched" events fire.
  */
-export function useTenantLogo(activeCompanyId: string | null) {
+export function useTenantLogo(effectiveCompanyId: string | null) {
   const [tenantLogoUrl, setTenantLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Always clear stale logo from a previous tenant before fetching.
     setTenantLogoUrl(null);
 
-    if (!activeCompanyId) return;
+    if (!effectiveCompanyId) return;
 
     let cancelled = false;
-    const requestedCompanyId = activeCompanyId;
+    const requestedCompanyId = effectiveCompanyId;
 
     const fetchLogo = async () => {
       const { data } = await supabase
@@ -29,7 +29,7 @@ export function useTenantLogo(activeCompanyId: string | null) {
         .single();
 
       // Discard responses from a tenant that is no longer active.
-      if (cancelled || requestedCompanyId !== activeCompanyId) return;
+      if (cancelled || requestedCompanyId !== effectiveCompanyId) return;
       if (!data || data.id !== requestedCompanyId) return;
 
       // Master tenant always falls back to the Accord logo.
@@ -42,7 +42,7 @@ export function useTenantLogo(activeCompanyId: string | null) {
         const { data: signed } = await supabase.storage
           .from("documents")
           .createSignedUrl(data.brand_logo_path, 60 * 60 * 24);
-        if (cancelled || requestedCompanyId !== activeCompanyId) return;
+        if (cancelled || requestedCompanyId !== effectiveCompanyId) return;
         if (signed?.signedUrl) {
           setTenantLogoUrl(signed.signedUrl);
           return;
@@ -61,21 +61,23 @@ export function useTenantLogo(activeCompanyId: string | null) {
       window.removeEventListener("brand-colors-updated", handler);
       window.removeEventListener("tenant-switched", handler);
     };
-  }, [activeCompanyId]);
+  }, [effectiveCompanyId]);
   return tenantLogoUrl;
 }
 
-export function useTenantBranding(activeCompanyId: string | null) {
+export function useTenantBranding(effectiveCompanyId: string | null) {
   const [branding, setBranding] = useState<{
     primary_color: string | null;
     secondary_color: string | null;
     accent_color: string | null;
     bg_color: string | null;
     text_color: string | null;
+    nome_fantasia: string | null;
+    razao_social: string | null;
   } | null>(null);
 
   useEffect(() => {
-    if (!activeCompanyId) {
+    if (!effectiveCompanyId) {
       setBranding(null);
       return;
     }
@@ -83,8 +85,8 @@ export function useTenantBranding(activeCompanyId: string | null) {
     const fetchBranding = async () => {
       const { data } = await supabase
         .from("companies")
-        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color")
-        .eq("id", activeCompanyId)
+        .select("brand_primary_color, brand_secondary_color, brand_accent_color, brand_bg_color, brand_text_color, nome_fantasia, razao_social")
+        .eq("id", effectiveCompanyId)
         .single();
 
       if (data) {
@@ -94,14 +96,20 @@ export function useTenantBranding(activeCompanyId: string | null) {
           accent_color: data.brand_accent_color,
           bg_color: data.brand_bg_color,
           text_color: data.brand_text_color,
+          nome_fantasia: data.nome_fantasia,
+          razao_social: data.razao_social,
         });
       }
     };
 
     fetchBranding();
     window.addEventListener("brand-colors-updated", fetchBranding);
-    return () => window.removeEventListener("brand-colors-updated", fetchBranding);
-  }, [activeCompanyId]);
+    window.addEventListener("tenant-switched", fetchBranding);
+    return () => {
+      window.removeEventListener("brand-colors-updated", fetchBranding);
+      window.removeEventListener("tenant-switched", fetchBranding);
+    };
+  }, [effectiveCompanyId]);
 
   return branding;
 }
