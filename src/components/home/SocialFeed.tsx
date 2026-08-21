@@ -781,7 +781,34 @@ function PostActionsBar({
   const [following, setFollowing] = useState(true);
   const [commentOpen, setCommentOpen] = useState(true);
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState<{ id: string; author: string; avatar?: string | null; text: string; ts: string }[]>([]);
+
+  const commentsQ = useQuery({
+    queryKey: ["feed-post-comments", postId],
+    enabled: !!postId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("feed_post_comments")
+        .select("*")
+        .eq("post_id", postId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const commentUserIds = useMemo(() => (commentsQ.data || []).map(c => c.user_id), [commentsQ.data]);
+  const { data: profilesMap = {} } = useFeedProfiles(commentUserIds, tenantId);
+
+  const comments = useMemo(() => {
+    return (commentsQ.data || []).map(c => ({
+      id: c.id,
+      user_id: c.user_id,
+      author: profilesMap[c.user_id]?.name || "Usuário",
+      avatar: profilesMap[c.user_id]?.avatar_url,
+      text: c.content,
+      ts: c.created_at,
+    }));
+  }, [commentsQ.data, profilesMap]);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotText, setCopilotText] = useState("");
   const [copilotLoading, setCopilotLoading] = useState(false);
@@ -844,19 +871,26 @@ function PostActionsBar({
     setCopilotLoading(false);
   };
 
-  const submitComment = () => {
-    if (!comment.trim()) return;
-    setComments((c) => [
-      ...c,
-      {
-        id: crypto.randomUUID(),
-        author: profile?.name || "Você",
-        avatar: profile?.avatar_url,
-        text: comment.trim(),
-        ts: new Date().toISOString(),
-      },
-    ]);
-    setComment("");
+  const submitComment = useMutation({
+    mutationFn: async () => {
+      if (!comment.trim() || !postId || !tenantId || !user?.id) return;
+      const { error } = await supabase.from("feed_post_comments").insert({
+        post_id: postId,
+        user_id: user.id,
+        servidor_id: tenantId,
+        content: comment.trim(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setComment("");
+      qc.invalidateQueries({ queryKey: ["feed-post-comments", postId] });
+    },
+    onError: (err: any) => toast.error("Erro ao comentar: " + err.message),
+  });
+
+  const handleSubmitComment = () => {
+    if (comment.trim()) submitComment.mutate();
   };
 
   return (
@@ -936,10 +970,12 @@ function PostActionsBar({
                 ) : (
                   viewers.map((v) => (
                     <div key={v.user_id} className="flex items-center gap-2 p-2 rounded-md hover:bg-accent/50">
-                      <Avatar className="h-7 w-7">
-                        {v.avatar_url && <AvatarImage src={v.avatar_url} />}
-                        <AvatarFallback className="text-[10px]">{initials(v.name)}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        userId={v.user_id}
+                        name={v.name}
+                        avatarUrl={v.avatar_url}
+                        size={28}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium truncate">{v.name}</p>
                         <p className="text-[10px] text-muted-foreground">
@@ -1032,12 +1068,13 @@ function PostActionsBar({
         <div className="mt-3 space-y-2.5 animate-fade-in">
           {comments.map((c) => (
             <div key={c.id} className="flex items-start gap-2.5">
-              <Avatar className="h-8 w-8 shrink-0">
-                {c.avatar && <AvatarImage src={c.avatar} />}
-                <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
-                  {initials(c.author)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                userId={c.user_id}
+                name={c.author}
+                avatarUrl={c.avatar}
+                size={32}
+                className="shrink-0"
+              />
               <div className="flex-1 min-w-0 rounded-2xl bg-white/[0.04] ring-1 ring-white/5 px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold">{c.author}</span>
@@ -1050,17 +1087,18 @@ function PostActionsBar({
             </div>
           ))}
           <div className="flex items-center gap-2.5">
-            <Avatar className="h-8 w-8 shrink-0">
-              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-              <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary to-violet-600 text-white">
-                {initials(profile?.name)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              userId={user?.id}
+              name={profile?.name}
+              avatarUrl={profile?.avatar_url}
+              size={32}
+              className="shrink-0"
+            />
             <div className="flex-1 flex items-center gap-2 rounded-full bg-white/[0.04] ring-1 ring-white/5 px-3 h-10 focus-within:ring-primary/40 transition">
               <input
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
                 placeholder="Adicionar comentário"
                 className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/60"
               />
@@ -1072,8 +1110,8 @@ function PostActionsBar({
                 <Sparkle className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={submitComment}
-                disabled={!comment.trim()}
+                onClick={handleSubmitComment}
+                disabled={!comment.trim() || submitComment.isPending}
                 className="h-7 w-7 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition disabled:opacity-40"
                 title="Enviar"
               >
@@ -1303,7 +1341,7 @@ export function SocialFeed() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("feed_posts")
-        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned")
+        .select("id,content,image_url,tags,author_id,created_at,servidor_id,pinned,post_type")
         .eq("servidor_id", tenantId!)
         .order("pinned", { ascending: false })
         .order("created_at", { ascending: false })
@@ -1511,12 +1549,13 @@ function PostFeedCard({ item, index }: { item: Extract<FeedItem, { kind: "post" 
         </div>
       )}
       <div className="flex items-center gap-3 px-5 pt-5">
-        <Avatar className="h-11 w-11 ring-2 ring-primary/20">
-          {item.author_avatar && <AvatarImage src={item.author_avatar} />}
-          <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
-            {initials(item.author_name)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          userId={item.author_id}
+          name={item.author_name}
+          avatarUrl={item.author_avatar}
+          size={44}
+          className="ring-2 ring-primary/20"
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold">{item.author_name || "Colaborador"}</p>
