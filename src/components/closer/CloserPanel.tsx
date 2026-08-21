@@ -36,8 +36,8 @@ function CopyButton({ text, onCopy }: { text: string; onCopy?: () => void }) {
 }
 
 export function CloserPanel() {
-  const [methodology, setMethodology] = useState<string>("save-car");
-  const [saveCarTab, setSaveCarTab] = useState<string>("individual");
+  const [methodology] = useState<string>("save-car");
+  const [saveCarTab] = useState<string>("individual");
   const [channel, setChannel] = useState<'whatsapp' | 'call'>('whatsapp');
   const [clientData, setClientData] = useState({
     name: "",
@@ -140,9 +140,9 @@ export function CloserPanel() {
       {/* Header */}
       <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 gap-4">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Painel de Apoio</h1>
+          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Individual</h1>
           <div className="flex items-center gap-1 rounded-full bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold">
-            <Zap className="h-3 w-3 fill-current" /> SDR OS
+            <Zap className="h-3 w-3 fill-current" /> Recuperação de Associados
           </div>
         </div>
         
@@ -168,54 +168,9 @@ export function CloserPanel() {
         </div>
       </div>
 
-      {/* Sub Tabs */}
-      <div className="px-4 py-2 flex items-center gap-1 border-b border-border/50 overflow-x-auto no-scrollbar bg-slate-50/50">
-        {["Atendimento", "DISC", "Metodologias", "Save Car", "iGreen", "Objeções"].map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setMethodology(t.toLowerCase().replace(" ", "-"));
-              if (t === "Save Car") setSaveCarTab("individual");
-            }}
-            className={cn(
-              "px-4 py-2 text-xs font-bold rounded-lg transition-colors whitespace-nowrap",
-              methodology === t.toLowerCase().replace(" ", "-") 
-                ? "bg-slate-900 text-white" 
-                : "text-slate-500 hover:text-slate-700"
-            )}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-
-      {methodology === 'save-car' && (
-        <div className="px-4 py-2 flex items-center gap-1 border-b border-border/50 overflow-x-auto no-scrollbar bg-white">
-          {["Individual", "Importar Planilha", "Sorteio", "Cadência", "Accord Sales"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setSaveCarTab(t.toLowerCase().replace(" ", "-"))}
-              className={cn(
-                "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap",
-                saveCarTab === t.toLowerCase().replace(" ", "-") 
-                  ? "bg-blue-100 text-blue-700" 
-                  : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      )}
-
+      {/* Main Content - Only Individual Recovery */}
       <div className="flex-1 overflow-y-auto">
-        {methodology === 'save-car' && saveCarTab === 'individual' ? (
-          <SaveCarIndividual />
-        ) : (
-          <div className="p-8 text-center text-muted-foreground">
-            Funcionalidade em desenvolvimento para este módulo.
-          </div>
-        )}
+        <SaveCarIndividual />
       </div>
     </div>
   );

@@ -19,7 +19,7 @@ export function usePermissions() {
   const [customPerms, setCustomPerms] = useState<Record<string, PermissionEntry>>({});
   const [loading, setLoading] = useState(true);
 
-  const isCeoOrMaster = role === "ceo" || role === "master" || profile?.is_master === true;
+  const isCeoOrMaster = role === "ceo" || profile?.is_master === true;
 
   useEffect(() => {
     if (authLoading) { setLoading(true); return; }

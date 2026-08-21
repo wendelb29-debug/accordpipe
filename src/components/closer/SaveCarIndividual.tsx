@@ -181,7 +181,7 @@ export function SaveCarIndividual() {
   const step3 = sortedScripts.find(s => s.step_key === 'motivo');
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
+    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans scroll-smooth">
       {/* Hero Card */}
       <div className="relative overflow-hidden rounded-[24px] bg-primary p-6 sm:p-8 text-primary-foreground shadow-xl">
         <div className="relative z-10">
