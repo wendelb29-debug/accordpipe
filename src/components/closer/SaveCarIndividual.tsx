@@ -148,6 +148,10 @@ export function SaveCarIndividual() {
 
   // Hardcoded logic for Kamilla workspace as requested
   const isKamillaWorkspace = activeWorkspaceId === '0123a22e-807e-424f-abfd-b3a570435f2b';
+  const { isMasterTenantAdmin } = useAuth();
+  
+  // Show Kamilla scripts if it's the Kamilla workspace OR if the user is from the Master tenant
+  const showKamillaScripts = isKamillaWorkspace || isMasterTenantAdmin;
   
   const getProcessedText = (text: string) => {
     if (!text) return "";
@@ -156,7 +160,7 @@ export function SaveCarIndividual() {
       .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]");
     
     // Tratamento especial para o script "Vendeu" que tem dois passos (somente se for Kamilla ou se o texto bater com o padrão)
-    if (isKamillaWorkspace && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
+    if (showKamillaScripts && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
       const parts = text.split("Bacana!");
       if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
       return "Bacana!" + parts[1];
@@ -166,7 +170,7 @@ export function SaveCarIndividual() {
   };
 
   const getStep2Content = () => {
-    if (isKamillaWorkspace) {
+    if (showKamillaScripts) {
       return "Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?";
     }
     return step2?.content || "";
@@ -174,7 +178,7 @@ export function SaveCarIndividual() {
 
   const getBranchContent = (branchKey: string) => {
     let content = "";
-    if (isKamillaWorkspace) {
+    if (showKamillaScripts) {
       if (branchKey === 'continua') content = 'Entendi. E atualmente ele está sem proteção?';
       else if (branchKey === 'trocou') content = 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?';
       else if (branchKey === 'vendeu') content = 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!';
@@ -188,9 +192,12 @@ export function SaveCarIndividual() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-4xl mx-auto w-full font-sans">
-      {isKamillaWorkspace && (
+      {showKamillaScripts && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 font-medium whitespace-pre-wrap">
-          <h4 className="font-black mb-2 uppercase tracking-tighter text-blue-900 border-b border-blue-200 pb-1">Scripts Kamilla</h4>
+          <h4 className="font-black mb-2 uppercase tracking-tighter text-blue-900 border-b border-blue-200 pb-1">
+            {isMasterTenantAdmin ? "Scripts Kamilla (Visível para Master)" : "Scripts Kamilla"}
+          </h4>
+          <p className="mb-2 text-[10px] text-blue-600 font-bold uppercase">todos usuarios cadastrado no tenet master poder ver essas opçoes no workspace kamilla</p>
           
           <div className="space-y-4">
             <div>
