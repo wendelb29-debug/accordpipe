@@ -290,14 +290,21 @@ export default function EmailInbox() {
     }
   };
 
+  // Limita a concorrência: dezenas de invokes simultâneos derrubam o boot da edge function (503 BOOT_ERROR)
+  const runLimited = async <T,>(items: T[], fn: (item: T) => Promise<unknown>, limit = 3) => {
+    for (let i = 0; i < items.length; i += limit) {
+      await Promise.allSettled(items.slice(i, i + limit).map(fn));
+    }
+  };
+
   const markAllRead = async () => {
     const unread = messages.filter(m => !m.is_read);
     if (!unread.length) return;
     setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
     window.dispatchEvent(new CustomEvent("email-unread-changed"));
-    await Promise.all(unread.map(m =>
+    await runLimited(unread, (m) =>
       supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: m.id, action: "markRead" } })
-    ));
+    );
     window.dispatchEvent(new CustomEvent("email-unread-changed"));
     toast.success("Tudo marcado como lido");
   };
@@ -309,21 +316,22 @@ export default function EmailInbox() {
     if (action === "read") {
       setMessages(prev => prev.map(m => ids.includes(m.id) ? { ...m, is_read: true } : m));
       window.dispatchEvent(new CustomEvent("email-unread-changed"));
-      await Promise.all(ids.map(id =>
+      await runLimited(ids, (id) =>
         supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: id, action: "markRead" } })
-      ));
+      );
       window.dispatchEvent(new CustomEvent("email-unread-changed"));
       toast.success(`${ids.length} marcadas como lidas`);
     } else if (action === "delete") {
       setMessages(prev => prev.filter(m => !ids.includes(m.id)));
-      await Promise.all(ids.map(id =>
+      await runLimited(ids, (id) =>
         supabase.functions.invoke("email-gmail-modify", { body: { messageRowId: id, action: "trash" } })
-      ));
+      );
       window.dispatchEvent(new CustomEvent("email-unread-changed"));
       toast.success(`${ids.length} movidas para a lixeira`);
     }
     setSelectedIds(new Set());
   };
+
 
   const handleTrash = async (msg: EmailMessage) => {
     setMessages(prev => prev.filter(m => m.id !== msg.id));
