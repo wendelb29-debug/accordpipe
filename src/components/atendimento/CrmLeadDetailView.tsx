@@ -152,6 +152,7 @@ interface CrmLeadDetailViewProps {
   isAdminPipeline?: boolean;
   dynamicStages?: DynamicStage[];
   stagesLoading?: boolean;
+  onScheduleChanged?: (leadId: string) => void;
 }
 
 const LOST_REASONS = [
@@ -162,7 +163,7 @@ const LOST_REASONS = [
   { value: "sem_contato", label: "SEM CONTATO", description: "Não obteve sucesso em nenhum dos contatos" },
 ];
 
-export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline, dynamicStages, stagesLoading }: CrmLeadDetailViewProps) {
+export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelete, isAdminPipeline, dynamicStages, stagesLoading, onScheduleChanged }: CrmLeadDetailViewProps) {
   const { role, profile } = useAuth();
   const { activities, loading: activitiesLoading, addActivity, refetch: refetchActivities } = useCrmActivities(lead.id);
   const [editing, setEditing] = useState(false);
