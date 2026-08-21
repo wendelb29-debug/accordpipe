@@ -7,6 +7,7 @@ import { useEvents, useEventConfirmations, type TenantEvent } from "@/hooks/useE
 import { EventFormDialog } from "@/components/eventos/EventFormDialog";
 import { ManageAnnouncementsDialog } from "@/components/home/ManageAnnouncementsDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,8 @@ import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { resolveSignedUrl } from "@/hooks/useSignedUrl";
+import { useFeedProfiles } from "@/hooks/useFeedProfiles";
+
 
 type FeedItem =
   | { kind: "event"; id: string; ts: string; event: TenantEvent }
