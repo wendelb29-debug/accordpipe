@@ -455,12 +455,6 @@ export function Sidebar() {
               borderColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)` : undefined,
               color: tenantBranding?.primary_color || undefined
             } : undefined}
-                ? `linear-gradient(135deg, ${tenantBranding.primary_color}, ${tenantBranding.accent_color || tenantBranding.secondary_color})`
-                : 'linear-gradient(135deg, #7A3FF2, #D94FD5)' 
-            } : tenantBranding?.primary_color ? {
-              color: tenantBranding.primary_color,
-              borderColor: `${tenantBranding.primary_color}33`
-            } : undefined}
           >
             <Zap className="h-3.5 w-3.5" />
             <span className="transition-opacity duration-300">ACCORD Stack</span>
