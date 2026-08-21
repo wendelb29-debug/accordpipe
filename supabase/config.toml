@@ -23,3 +23,6 @@ project_id = "nglwgzknqgihlbkdnflu"
     verify_jwt = false
   [functions.uazapi-webhook]
     verify_jwt = false
+  [functions.process-lead-notification]
+    verify_jwt = true
+

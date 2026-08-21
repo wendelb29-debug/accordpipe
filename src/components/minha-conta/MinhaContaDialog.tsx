@@ -40,9 +40,11 @@ const NOTIFICATION_CATEGORIES: Array<{ key: string; label: string; description: 
   { key: "birthdays", label: "Aniversários", description: "Aniversariantes do seu tenant" },
   { key: "activities", label: "Atividades e agenda", description: "Lembretes de compromissos e follow-ups" },
   { key: "documents", label: "Documentos e assinaturas", description: "Contratos e assinaturas eletrônicas" },
-  { key: "leads", label: "Leads e propostas", description: "Novos leads, atualizações de propostas e cards" },
+  { key: "new_lead", label: "Novos leads", description: "Receber aviso quando um lead entrar nos seus workspaces" },
+  { key: "leads", label: "Atualizações de leads", description: "Atualizações de propostas e cards existentes" },
   { key: "system", label: "Sistema", description: "Comunicados administrativos e do sistema" },
 ];
+
 
 function formatCpf(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);

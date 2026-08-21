@@ -9,6 +9,10 @@ interface Props {
   leadOrigin?: string
   leadLink: string
   userName?: string
+  leadPhone?: string
+  leadEmail?: string
+  createdAt?: string
+  responsibleName?: string
 }
 
 const Email = ({
@@ -18,26 +22,34 @@ const Email = ({
   leadOrigin,
   leadLink,
   userName,
+  leadPhone,
+  leadEmail,
+  createdAt,
+  responsibleName,
 }: Props) => {
   const greet = userName ? `Olá, ${userName}!` : 'Olá!'
-  const details = [
-    `Empresa: ${companyName}`,
-    contactName ? `Contato: ${contactName}` : null,
-    workspaceName ? `Workspace: ${workspaceName}` : null,
+  
+  const leadInfo = [
+    `Lead: ${contactName || 'Sem nome'}`,
+    companyName ? `Empresa: ${companyName}` : null,
     leadOrigin ? `Origem: ${leadOrigin}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+    createdAt ? `Recebido em: ${createdAt}` : null,
+    responsibleName ? `Responsável: ${responsibleName}` : null,
+    leadPhone ? `Telefone: ${leadPhone}` : null,
+    leadEmail ? `E-mail: ${leadEmail}` : null,
+  ].filter(Boolean)
 
-  const body = `${greet} Um novo lead acaba de entrar no seu pipeline. ${details}. Abra o card para qualificar e dar o próximo passo.`
+  const body = `${greet} Um novo lead entrou no workspace ${workspaceName || 'comercial'}.\n\n` + 
+               leadInfo.join('\n') + 
+               '\n\nAcesse o Accord para visualizar e iniciar o atendimento.'
 
   return (
     <AccordEmailLayout
-      preview={`Novo lead: ${contactName ? contactName + ' · ' : ''}${companyName}`}
+      preview={`Novo lead em ${workspaceName || 'Accord'}: ${contactName || companyName}`}
       emoji="✨"
       title="Novo Lead recebido"
       body={body}
-      buttonText="Abrir lead no pipeline"
+      buttonText="Abrir lead"
       confirmationUrl={leadLink}
     />
   )
@@ -45,7 +57,7 @@ const Email = ({
 
 export const template = {
   component: Email,
-  subject: (d: Props) => `✨ Novo Lead: ${d.companyName}`,
+  subject: (d: Props) => `Novo lead em ${d.workspaceName || 'Accord'} — ${d.contactName || d.companyName}`,
   displayName: 'Novo Lead',
   previewData: {
     companyName: 'Nova Aura',
@@ -54,5 +66,10 @@ export const template = {
     leadOrigin: 'Formulário',
     leadLink: 'https://accordpipe.com.br/atendimento',
     userName: 'Maria',
+    leadPhone: '(11) 99999-9999',
+    leadEmail: 'joao@exemplo.com',
+    createdAt: '21/08/2026 10:00',
+    responsibleName: 'Pedro Closer',
   },
 } satisfies TemplateEntry
+
