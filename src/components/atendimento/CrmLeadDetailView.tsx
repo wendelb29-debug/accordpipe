@@ -1570,7 +1570,11 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
 
             {/* Atividades - rich tab */}
             <TabsContent value="atividades" className={`${leadTabScrollClass} p-4`} style={leadTabScrollStyle}>
-              <LeadAtividadesTab lead={lead} addActivity={addActivity} />
+            <LeadAtividadesTab 
+              lead={lead} 
+              addActivity={addActivity} 
+              onScheduleChanged={onScheduleChanged}
+            />
             </TabsContent>
 
             {/* Ligações - filtered */}
