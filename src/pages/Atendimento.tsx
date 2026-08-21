@@ -12,25 +12,26 @@ import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import { MessageSquare, ClipboardList, FileSpreadsheet, UserRound } from "lucide-react";
 import { CloserPanel } from "@/components/closer/CloserPanel";
 
+import { usePermissions } from "@/hooks/usePermissions";
+
 function AtendimentoContent() {
   const [crmSearch] = useState("");
   const { role, isMaster, profile, activeCompanyId } = useAuth();
   const { activeWorkspaceId, workspaces, loading: wsLoading, selectWorkspace, activeWorkspace } = useWorkspaceContext();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const { hasPermission } = usePermissions();
 
   const { pushBackHandler } = useBackNavigation();
 
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
-
-  // Kamilla Workspace Logic
-  const KAMILLA_WORKSPACE_ID = "0123a22e-807e-424f-abfd-b3a570435f2b";
-  const isKamillaWorkspace = selectedWsId === KAMILLA_WORKSPACE_ID || activeWorkspace?.name?.trim().toLowerCase() === "kamilla";
   
   // Validates if user is an active member of the current tenant
   const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
-  const canAccessKamillaTools = isKamillaWorkspace && isActiveTenantMember;
+  
+  // Permission to use Closer - any authorized member of an active tenant with closer permission
+  const canAccessCloser = (isMaster || hasPermission("use_closer")) && isActiveTenantMember;
 
   // Auto-select workspace from query params
   useEffect(() => {
@@ -71,8 +72,8 @@ function AtendimentoContent() {
     </div>
   );
 
-  // PRIORITY: Kamilla Workspace specialized view
-  if (canAccessKamillaTools) {
+  // Render Closer if user has permission
+  if (canAccessCloser) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
         {backButton}
