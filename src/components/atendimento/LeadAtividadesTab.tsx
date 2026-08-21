@@ -627,8 +627,11 @@ export function LeadAtividadesTab({
                       onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, email: c === true }))}
                       disabled={!profile?.email}
                     />
-                    <span>📧 E-mail {!profile?.email ? "(sem e-mail no perfil)" : `(${profile.email})`}</span>
+                    <span>📧 E-mail {profile?.email ? `(${profile.email})` : "(cadastre um e-mail para ativar)"}</span>
                   </label>
+                  {!profile?.email && (
+                    <p className="text-[9px] text-amber-600 font-medium">Cadastre um e-mail no perfil para ativar este canal.</p>
+                  )}
                 </div>
               </div>
             )}
