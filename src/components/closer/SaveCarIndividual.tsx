@@ -178,7 +178,7 @@ export function SaveCarIndividual() {
 
   const getBranchContent = (branchKey: string) => {
     let content = "";
-    if (isKamillaWorkspace) {
+    if (showKamillaScripts) {
       if (branchKey === 'continua') content = 'Entendi. E atualmente ele está sem proteção?';
       else if (branchKey === 'trocou') content = 'Qual veículo você está usando atualmente? Seu veículo novo já está protegido?';
       else if (branchKey === 'vendeu') content = 'Está sem veículo atualmente? Bacana! Consegue me indicar pessoas que você sabe que possuem veículo? Se elas fecharem comigo, te pago um PIX de R$ 50,00!';
