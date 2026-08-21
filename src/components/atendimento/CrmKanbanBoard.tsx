@@ -108,7 +108,17 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const hasDynamicColumns = kanbanCols.length > 0;
 
   const [selectedUserId, setSelectedUserId] = useState<string>("all");
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, isSupervisor } = useCrmLeads(
+  const { 
+    leads, 
+    loading, 
+    createLead, 
+    updateLead, 
+    deleteLead, 
+    moveToStage, 
+    markAsWonAndTransfer, 
+    isSupervisor,
+    stageStats
+  } = useCrmLeads(
     "commercial",
     workspaceId,
     hasDynamicColumns ? dynamicStages : undefined,

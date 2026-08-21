@@ -49,7 +49,7 @@ import { cn } from "@/lib/utils";
 export type CardStatus = "aberto" | "ganho" | "perdido" | "lixeira";
 
 export interface FilterState {
-  responsavel: string | null;
+  responsavel: string | null; // Mapped to assigned_to_user_id
   status: CardStatus[];
   dataCriacaoInicio: Date | null;
   dataCriacaoFim: Date | null;
