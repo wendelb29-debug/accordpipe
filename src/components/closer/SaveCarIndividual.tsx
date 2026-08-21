@@ -160,7 +160,7 @@ export function SaveCarIndividual() {
       .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]");
     
     // Tratamento especial para o script "Vendeu" que tem dois passos (somente se for Kamilla ou se o texto bater com o padrão)
-    if (isKamillaWorkspace && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
+    if (showKamillaScripts && text.includes("Está sem veículo atualmente?") && text.includes("Bacana!")) {
       const parts = text.split("Bacana!");
       if (vendeuStep === 1) return (clientData.name ? `Oi, ${clientData.name}, tudo bem? ` : "") + parts[0].trim();
       return "Bacana!" + parts[1];
@@ -170,7 +170,7 @@ export function SaveCarIndividual() {
   };
 
   const getStep2Content = () => {
-    if (isKamillaWorkspace) {
+    if (showKamillaScripts) {
       return "Pergunto porque quero entender se o motivo que levou ao cancelamento ainda existe. Na época, o que mais pesou para você sair?";
     }
     return step2?.content || "";
