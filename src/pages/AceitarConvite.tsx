@@ -118,8 +118,13 @@ export default function AceitarConvite() {
           .eq("user_id", authData.user.id);
       }
 
-      // Mark invitation as accepted (token-scoped RPC)
-      await supabase.rpc("accept_user_invitation_by_token", { p_token: token });
+      // Mark invitation as accepted and establish tenant link atomically
+      const { error: rpcError } = await supabase.rpc("accept_user_invitation_by_token", { p_token: token });
+      if (rpcError) throw rpcError;
+
+      // Clear any previous tenant state to ensure clean onboarding
+      localStorage.removeItem("accord_active_company");
+      window.dispatchEvent(new CustomEvent("tenant-switched", { detail: { id: invitation.company_id } }));
 
       toast.success("Conta criada com sucesso! Verifique seu e-mail para confirmar.");
       setTimeout(() => navigate("/auth"), 3000);

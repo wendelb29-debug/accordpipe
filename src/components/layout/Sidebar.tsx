@@ -451,7 +451,10 @@ export function Sidebar() {
               location.pathname === "/accord-stack" && "text-sidebar-primary-foreground border-sidebar-primary shadow-[0_0_12px_rgba(122,63,242,0.3)]"
             )}
             style={location.pathname === "/accord-stack" ? { 
-              background: tenantBranding?.primary_color && (tenantBranding.accent_color || tenantBranding.secondary_color) 
+              backgroundColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.15)` : undefined,
+              borderColor: tenantBranding?.primary_color ? `hsl(${hexToHsl(tenantBranding.primary_color)} / 0.35)` : undefined,
+              color: tenantBranding?.primary_color || undefined
+            } : undefined}
                 ? `linear-gradient(135deg, ${tenantBranding.primary_color}, ${tenantBranding.accent_color || tenantBranding.secondary_color})`
                 : 'linear-gradient(135deg, #7A3FF2, #D94FD5)' 
             } : tenantBranding?.primary_color ? {
