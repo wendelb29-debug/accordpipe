@@ -148,6 +148,10 @@ export function SaveCarIndividual() {
 
   // Hardcoded logic for Kamilla workspace as requested
   const isKamillaWorkspace = activeWorkspaceId === '0123a22e-807e-424f-abfd-b3a570435f2b';
+  const { isMasterTenantAdmin } = useAuth();
+  
+  // Show Kamilla scripts if it's the Kamilla workspace OR if the user is from the Master tenant
+  const showKamillaScripts = isKamillaWorkspace || isMasterTenantAdmin;
   
   const getProcessedText = (text: string) => {
     if (!text) return "";
