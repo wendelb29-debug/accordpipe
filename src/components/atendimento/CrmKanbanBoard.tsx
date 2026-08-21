@@ -606,7 +606,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
-              <span className="text-sm font-bold text-foreground">{leads.length}</span>
+              <span className="text-sm font-bold text-foreground">{stageStats.reduce((acc, s) => acc + s.count, 0)}</span>
             </div>
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
@@ -829,7 +829,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)}
                       title="Cards filtrados / total na etapa"
                     >
-                      {stageLeads.length}/{stageTotalMap[stage.id] || 0}
+                      {stageTotalMap[stage.id] || 0} cards
                     </span>
                   </div>
                   {stage.daysLimit && (
