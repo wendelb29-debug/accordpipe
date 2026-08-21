@@ -1255,7 +1255,53 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           )}
                         </div>
 
-                        {/* Activity indicator removido conforme solicitação visual */}
+                        {/* Scheduling Status Badge */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {hasOverdue && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 border border-red-500/50 dark:border-red-700/60 shrink-0 cursor-help">
+                                  <CalendarClock className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+                                  <span className="text-[10px] font-bold text-red-700 dark:text-red-300 uppercase">
+                                    Agendamento atrasado
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px] bg-red-600 text-white border-none shadow-lg">
+                                {scheduleState.scheduledAt ? 
+                                  `Atrasado: ${new Intl.DateTimeFormat("pt-BR", { 
+                                    day: "2-digit", month: "2-digit", year: "numeric", 
+                                    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
+                                  }).format(scheduleState.scheduledAt)}` : 
+                                  "Agendamento atrasado"}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {scheduleState.state === "scheduled" && scheduleState.scheduledAt && !isWon && !isLost && !isTrash && (
+                            <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 shadow-sm">
+                              <Clock className="h-3 w-3 text-slate-500" />
+                              <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                Agendado: {new Intl.DateTimeFormat("pt-BR", { 
+                                  day: "2-digit", month: "2-digit", 
+                                  hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" 
+                                }).format(scheduleState.scheduledAt)}
+                              </span>
+                            </div>
+                          )}
+                          {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0 cursor-help shadow-sm">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase">
+                                    Sem agendamento
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px] font-medium">Sem agendamento</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
 
 
                         {/* Footer */}
