@@ -184,7 +184,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
   const [leadActivities, setLeadActivities] = useState<Record<string, ScheduleActivity[]>>({});
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
   const [now, setNow] = useState(new Date());
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
 
