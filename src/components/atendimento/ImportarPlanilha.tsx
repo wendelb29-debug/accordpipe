@@ -35,7 +35,7 @@ interface DistributionResult {
 
 type DistributionMethod = "round-robin" | "tags" | "cpf-cnpj" | "no-distribution";
 
-export function ImportarPlanilha() {
+export function ImportarPlanilha({ workspaceId }: { workspaceId?: string | null }) {
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,7 @@ export function ImportarPlanilha() {
   const [headers, setHeaders] = useState<string[]>([]);
   const [fileName, setFileName] = useState("");
   const [distribMethod, setDistribMethod] = useState<DistributionMethod>("no-distribution");
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(workspaceId || null);
   const [targetStage, setTargetStage] = useState<string>("novos");
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const { columns: kanbanStages } = useKanbanColumns(selectedWorkspaceId);
