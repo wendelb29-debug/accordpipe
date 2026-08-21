@@ -41,7 +41,7 @@ function formatSla(stage: DynamicStage): string {
 
 export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew, dynamicStages, stagesLoading }: CrmLeadDialogProps) {
   const { profile } = useAuth();
-  const { workspaceId } = useWorkspace();
+  const { activeWorkspaceId: workspaceId } = useWorkspaceContext();
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
 
   useEffect(() => {
