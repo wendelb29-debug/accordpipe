@@ -46,23 +46,26 @@ export interface CloserSession {
 export function useCloser(playbookId?: string) {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
+  const tenantId = profile?.company_id;
 
   const { data: playbooks, isLoading: loadingPlaybooks } = useQuery({
-    queryKey: ["closer-playbooks"],
+    queryKey: ["closer-playbooks", tenantId],
     queryFn: async () => {
+      if (!tenantId) return [];
       const { data, error } = await supabase
         .from("closer_playbooks")
         .select("*")
         .eq("is_active", true)
+        .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .order("name");
       if (error) throw error;
       return data as Playbook[];
     },
-    enabled: !!profile?.company_id,
+    enabled: !!tenantId,
   });
 
   const { data: scripts, isLoading: loadingScripts } = useQuery({
-    queryKey: ["closer-scripts", playbookId],
+    queryKey: ["closer-scripts", playbookId, tenantId],
     queryFn: async () => {
       if (!playbookId) return [];
       const { data, error } = await supabase
