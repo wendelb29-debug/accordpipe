@@ -231,8 +231,7 @@ export function WorkspaceHub({ onSelectWorkspace }: WorkspaceHubProps) {
       .from("crm_leads")
       .select("workspace_id")
       .eq("servidor_id", companyId)
-      .in("workspace_id", wsIds)
-      .neq("lead_status", "lost");
+      .in("workspace_id", wsIds);
 
     if (error) {
       console.error("Error fetching card counts:", error);

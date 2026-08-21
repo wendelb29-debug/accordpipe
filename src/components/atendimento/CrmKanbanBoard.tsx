@@ -606,7 +606,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
           <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
-              <span className="text-sm font-bold text-foreground">{filteredLeads.length}</span>
+              <span className="text-sm font-bold text-foreground">{leads.length}</span>
             </div>
             <div className="w-px h-4 bg-border/50" />
             <div className="flex items-center gap-1.5">
