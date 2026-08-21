@@ -198,7 +198,7 @@ export function SaveCarIndividual() {
           <h4 className="font-black mb-2 uppercase tracking-tighter text-blue-900 border-b border-blue-200 pb-1">
             {isMasterTenantAdmin ? "Scripts Kamilla (Visível para Master)" : "Scripts Kamilla"}
           </h4>
-          <p className="mb-2 text-[10px] text-blue-600 font-bold uppercase">todos usuarios cadastrado no tenet master poder ver essas opçoes no workspace kamilla</p>
+          <p className="mb-2 text-[10px] text-blue-600 font-bold uppercase">os usuarios cadastrado no tenet master ainda corrija isso</p>
           
           <div className="space-y-4">
             <div>
