@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBackNavigation } from "@/contexts/BackNavigationContext";
 import { MessageSquare, ClipboardList, FileSpreadsheet, UserRound } from "lucide-react";
 import { CloserPanel } from "@/components/closer/CloserPanel";
-
 import { usePermissions } from "@/hooks/usePermissions";
 
 function AtendimentoContent() {
@@ -21,16 +20,16 @@ function AtendimentoContent() {
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { hasPermission } = usePermissions();
-
   const { pushBackHandler } = useBackNavigation();
 
+  // Roles/Permissions logic
   const canSeeCommercial = isMaster || role === "admin" || role === "operador" || role === "ceo" || role === "comercial";
   const canSeeAdmin = isMaster || role === "admin" || role === "administrativo" || role === "ceo";
   
-  // Validates if user is an active member of the current tenant
+  // Multi-tenant check: user must belong to active tenant
   const isActiveTenantMember = !!profile && profile.is_active && profile.company_id === activeCompanyId;
   
-  // Permission to use Closer - any authorized member of an active tenant with closer permission
+  // Closer Access: Permission + Tenant Check
   const canAccessCloser = (isMaster || hasPermission("use_closer")) && isActiveTenantMember;
 
   // Auto-select workspace from query params
@@ -72,67 +71,6 @@ function AtendimentoContent() {
     </div>
   );
 
-  // Render Closer if user has permission
-  if (canAccessCloser) {
-    return (
-      <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
-        {backButton}
-        <Tabs defaultValue="comercial" className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between mx-3 mt-0.5 mb-0">
-            <TabsList className="w-fit h-8">
-              <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
-                <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
-              </TabsTrigger>
-              <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
-                <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
-              </TabsTrigger>
-              <TabsTrigger value="closer" className="gap-1.5 text-[11px] h-7 px-3">
-                <BrandIcon icon={UserRound} tone="blue" size="xs" /> Closer
-              </TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
-            <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
-          </TabsContent>
-          <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
-            <ImportarPlanilha workspaceId={selectedWsId} />
-          </TabsContent>
-          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
-            <CloserPanel />
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
-  }
-
-  // Fallback to role-based rendering for other workspaces
-  if (canSeeAdmin && !canSeeCommercial) {
-    return (
-      <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
-        {backButton}
-        <AdminKanbanBoard searchTerm={crmSearch} />
-      </div>
-    );
-  }
-
-  if (canSeeCommercial && !canSeeAdmin) {
-    return (
-      <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
-        {backButton}
-        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
-      </div>
-    );
-  }
-
-  if (!canSeeAdmin) {
-    return (
-      <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
-        {backButton}
-        <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
-      </div>
-    );
-  }
-
   return (
     <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
       {backButton}
@@ -142,17 +80,44 @@ function AtendimentoContent() {
             <TabsTrigger value="comercial" className="gap-1.5 text-[11px] h-7 px-3">
               <BrandIcon icon={MessageSquare} tone="emerald" size="xs" /> Pipeline Comercial
             </TabsTrigger>
+            
             <TabsTrigger value="importar" className="gap-1.5 text-[11px] h-7 px-3">
               <BrandIcon icon={FileSpreadsheet} tone="green" size="xs" /> Importar Planilha
             </TabsTrigger>
+
+            {canAccessCloser && (
+              <TabsTrigger value="closer" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={UserRound} tone="blue" size="xs" /> Closer
+              </TabsTrigger>
+            )}
+
+            {canSeeAdmin && (
+              <TabsTrigger value="admin" className="gap-1.5 text-[11px] h-7 px-3">
+                <BrandIcon icon={ClipboardList} tone="purple" size="xs" /> Administrativo
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
+
         <TabsContent value="comercial" className="flex-1 overflow-hidden mt-0">
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
+
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
           <ImportarPlanilha workspaceId={selectedWsId} />
         </TabsContent>
+
+        {canAccessCloser && (
+          <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
+            <CloserPanel />
+          </TabsContent>
+        )}
+
+        {canSeeAdmin && (
+          <TabsContent value="admin" className="flex-1 overflow-hidden mt-0">
+            <AdminKanbanBoard searchTerm={crmSearch} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
