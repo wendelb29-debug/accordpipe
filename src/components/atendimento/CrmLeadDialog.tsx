@@ -147,9 +147,31 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Empresa</Label>
-            <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Nome da empresa" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Empresa</Label>
+              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Nome da empresa" />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Responsável</Label>
+              <Select 
+                value={form.assigned_to_user_id || profile?.user_id || ""} 
+                onValueChange={(val) => setForm({ ...form, assigned_to_user_id: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.length > 0 ? (
+                    teamMembers.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>{m.name}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value={profile?.user_id || "me"}>{profile?.name || "Eu"}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
