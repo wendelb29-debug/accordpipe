@@ -41,7 +41,7 @@ const REMINDER_OPTIONS = [
   { value: "1440", label: "1 dia antes" },
 ];
 
-interface ActivityItem {
+export interface ActivityItem {
   id: string;
   lead_id: string;
   servidor_id: string;
@@ -60,6 +60,7 @@ interface ActivityItem {
   no_show_by_name: string | null;
   no_show_note: string | null;
 }
+
 
 export function LeadAtividadesTab({
   lead,
