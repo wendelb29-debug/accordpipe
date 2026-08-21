@@ -63,7 +63,7 @@ export function useCloser(playbookId?: string) {
         .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .order("name");
       if (error) throw error;
-      const sorted = [...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+      const sorted = [...(data || [])]; // Sort by name from query is fine, or sort locally if column existed
       return sorted as Playbook[];
     },
     enabled: !!tenantId,
