@@ -200,10 +200,9 @@ export function Sidebar() {
   };
 
   const [configOpen, setConfigOpen] = useState(false);
-  const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant } = useAuth();
-  const activeCompanyId = useActiveCompanyId();
-  const tenantLogoUrl = useTenantLogo(activeCompanyId);
-  const tenantBranding = useTenantBranding(activeCompanyId);
+  const { role, signOut, profile, isMasterTenantAdmin, isGlobalMaster, isResellerTenant, effectiveCompanyId } = useAuth();
+  const tenantLogoUrl = useTenantLogo(effectiveCompanyId);
+  const tenantBranding = useTenantBranding(effectiveCompanyId);
   const overdueCount = useOverdueCount();
   const unreadEmailCount = useUnreadEmailCount();
   
@@ -374,14 +373,23 @@ export function Sidebar() {
       )}>
         <div className="flex items-center gap-2 cursor-default min-w-0" onClick={(e) => e.preventDefault()}>
           {tenantLogoUrl ? (
-            <img
-              src={tenantLogoUrl}
-              alt="Tenant"
-              className={cn(
-                "transition-all duration-300 object-contain w-auto flex-shrink-0",
-                collapsed ? "h-8 max-w-[40px]" : "h-9 max-w-[140px]"
+            <div className="flex items-center gap-2 min-w-0">
+              <img
+                src={tenantLogoUrl}
+                alt="Tenant"
+                className={cn(
+                  "transition-all duration-300 object-contain w-auto flex-shrink-0",
+                  collapsed ? "h-8 max-w-[40px]" : "h-9 max-w-[100px]"
+                )}
+              />
+              {!collapsed && (
+                <span className={cn(
+                  "text-[13px] font-bold tracking-tight text-sidebar-foreground/90 truncate max-w-[100px] transition-all duration-300",
+                )}>
+                  {tenantBranding?.nome_fantasia || tenantBranding?.razao_social || "ACCORD"}
+                </span>
               )}
-            />
+            </div>
           ) : (
             <>
               <img
