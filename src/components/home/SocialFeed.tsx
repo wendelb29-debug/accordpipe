@@ -1347,24 +1347,22 @@ export function SocialFeed() {
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      const list = (rows ?? []) as any[];
-      const ids = Array.from(new Set(list.map((r) => r.author_id).filter(Boolean)));
-      const authors: Record<string, { name: string | null; avatar_url: string | null }> = {};
-      if (ids.length > 0) {
-        const { data: profs } = await supabase
-          .from("profiles").select("user_id,name,avatar_url").in("user_id", ids);
-        await Promise.all(((profs ?? []) as any[]).map(async (p) => {
-          const url = p.avatar_url ? await resolveSignedUrl(p.avatar_url).catch(() => p.avatar_url) : null;
-          authors[p.user_id] = { name: p.name, avatar_url: url };
-        }));
-      }
-      return list.map((r) => ({ ...r, author: authors[r.author_id] || { name: null, avatar_url: null } }));
+      return (rows ?? []) as any[];
     },
   });
 
+  const postAuthorIds = useMemo(() => (postsQ.data || []).map(p => p.author_id), [postsQ.data]);
+  const { data: feedProfilesMap = {} } = useFeedProfiles(postAuthorIds, tenantId);
+
   const announcementsList = announcementsQ.data ?? [];
   const refetchAnnouncements = announcementsQ.refetch;
-  const postsList = postsQ.data ?? [];
+  
+  const postsList = useMemo(() => {
+    return (postsQ.data || []).map((r) => ({ 
+      ...r, 
+      author: feedProfilesMap[r.author_id] || { name: null, avatar_url: null } 
+    }));
+  }, [postsQ.data, feedProfilesMap]);
 
   const publishPost = useMutation({
     mutationFn: async ({ content, tags }: { content: string; tags: string[] }) => {
