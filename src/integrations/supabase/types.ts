@@ -12065,6 +12065,7 @@ export type Database = {
           system_user_token: string
         }[]
       }
+      get_auth_company_id: { Args: never; Returns: string }
       get_call_responder: {
         Args: { p_contact_id: string; p_workspace_id: string }
         Returns: string
