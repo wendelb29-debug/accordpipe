@@ -38,7 +38,6 @@ function CopyButton({ text, onCopy }: { text: string; onCopy?: () => void }) {
 export function CloserPanel() {
   const [methodology] = useState<string>("save-car");
   const [saveCarTab] = useState<string>("individual");
-  const [channel, setChannel] = useState<'whatsapp' | 'call'>('whatsapp');
   const [clientData, setClientData] = useState({
     name: "",
     vehicle: "",
@@ -138,33 +137,12 @@ export function CloserPanel() {
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-background font-sans">
       {/* Header */}
-      <div className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/50 gap-4">
+      <div className="p-4 flex items-center justify-between border-b border-border/50">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Individual</h1>
-          <div className="flex items-center gap-1 rounded-full bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold">
-            <Zap className="h-3 w-3 fill-current" /> Recuperação de Associados
+          <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Recuperação de Associados</h1>
+          <div className="hidden sm:flex items-center gap-1 rounded-full bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold">
+            <Zap className="h-3 w-3 fill-current" /> Playbook Individual
           </div>
-        </div>
-        
-        <div className="flex items-center bg-slate-100 rounded-xl p-1 w-full sm:w-auto">
-          <button 
-            onClick={() => setChannel('call')}
-            className={cn(
-              "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
-              channel === 'call' ? "bg-white shadow-sm text-slate-900" : "text-slate-500"
-            )}
-          >
-            <Phone className="h-3.5 w-3.5" /> Ligação
-          </button>
-          <button 
-            onClick={() => setChannel('whatsapp')}
-            className={cn(
-              "flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2",
-              channel === 'whatsapp' ? "bg-white shadow-sm text-slate-900" : "text-slate-500"
-            )}
-          >
-            <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
-          </button>
         </div>
       </div>
 
