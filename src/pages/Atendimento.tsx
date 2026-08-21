@@ -72,8 +72,8 @@ function AtendimentoContent() {
     </div>
   );
 
-  // PRIORITY: Kamilla Workspace specialized view
-  if (canAccessKamillaTools) {
+  // Render Closer if user has permission
+  if (canAccessCloser) {
     return (
       <div className="-m-3 lg:-m-4 flex-1 min-h-0 overflow-hidden flex flex-col">
         {backButton}
