@@ -184,12 +184,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [localSearch, setLocalSearch] = useState(searchTerm);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<{ id: string; name: string; color: string }[]>([]);
-  const [leadsWithActivity, setLeadsWithActivity] = useState<Set<string>>(new Set());
-  const [leadsWithOverdueActivity, setLeadsWithOverdueActivity] = useState<Set<string>>(new Set());
-  const [overdueActivityCount, setOverdueActivityCount] = useState<Record<string, number>>({});
-  const [nextActivities, setNextActivities] = useState<Record<string, string>>({});
-  const [lastCompletedActivities, setLastCompletedActivities] = useState<Record<string, string>>({});
+  const [leadActivities, setLeadActivities] = useState<Record<string, ActivityItem[]>>({});
   const [signatureStatsByLead, setSignatureStatsByLead] = useState<Record<string, { signed: number; total: number; approved: boolean }>>({});
+
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState<FilterState>({
     ...emptyFilterState,
@@ -258,52 +255,43 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   }, [companyId]);
 
   useEffect(() => {
-    const fetchActivityStatus = async () => {
+    const fetchLeadActivities = async () => {
       if (leads.length === 0) return;
       const leadIds = leads.map((l) => l.id);
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("crm_lead_activities")
-        .select("lead_id, title, created_at, type, metadata")
+        .select("*")
         .in("lead_id", leadIds)
+        .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
         .order("created_at", { ascending: false });
-      if (data) {
-        const withActivity = new Set<string>();
-        const withOverdue = new Set<string>();
-        const overdueCount: Record<string, number> = {};
-        const nextAct: Record<string, string> = {};
-        const lastCompleted: Record<string, string> = {};
-        const scheduledTypes = ["internal", "email", "call", "meeting", "whatsapp"];
-        const now = new Date();
-        for (const activity of data) {
-          const meta = activity.metadata as any;
-          const status = meta?.activity_status || "planejada";
-          const isScheduled = scheduledTypes.includes(activity.type);
-          if (isScheduled && status === "planejada") {
-            const scheduledAt = meta?.scheduled_at ? new Date(meta.scheduled_at) : null;
-            if (scheduledAt && scheduledAt < now) {
-              // Overdue activity
-              withOverdue.add(activity.lead_id);
-              overdueCount[activity.lead_id] = (overdueCount[activity.lead_id] || 0) + 1;
-            }
-            if (!withActivity.has(activity.lead_id)) {
-              nextAct[activity.lead_id] = activity.title;
-            }
-            withActivity.add(activity.lead_id);
+      
+      if (!error && data) {
+        const activitiesByLead: Record<string, ActivityItem[]> = {};
+        data.forEach((activity: any) => {
+          if (!activitiesByLead[activity.lead_id]) {
+            activitiesByLead[activity.lead_id] = [];
           }
-          // Track last completed activity per lead
-          if (isScheduled && status === "concluida" && !lastCompleted[activity.lead_id]) {
-            lastCompleted[activity.lead_id] = activity.title;
-          }
-        }
-        setLeadsWithActivity(withActivity);
-        setLeadsWithOverdueActivity(withOverdue);
-        setOverdueActivityCount(overdueCount);
-        setNextActivities(nextAct);
-        setLastCompletedActivities(lastCompleted);
+          activitiesByLead[activity.lead_id].push(activity as ActivityItem);
+        });
+        setLeadActivities(activitiesByLead);
       }
     };
-    fetchActivityStatus();
+    fetchLeadActivities();
+
+    const channel = supabase
+      .channel("crm-kanban-activities")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "crm_lead_activities" },
+        fetchLeadActivities
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [leads]);
+
 
   useEffect(() => {
     let isMounted = true;
@@ -876,11 +864,9 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                   const overdueByDays = slaDays > 0
                     ? Math.max(0, Math.round(days - slaDays))
                     : 0;
-                  const hasActivity = leadsWithActivity.has(lead.id);
-                  const hasOverdue = leadsWithOverdueActivity.has(lead.id);
-                  const overdueActCount = overdueActivityCount[lead.id] || 0;
-                  const noActivity = !hasActivity;
-                  const progressColor = getProgressColor(lead, stage.id, hasActivity, hasOverdue);
+                  const scheduleState = getLeadScheduleState(leadActivities[lead.id] || []);
+                  const hasOverdue = scheduleState.state === "overdue";
+                  const overdueActCount = scheduleState.overdueCount;
                   const signatureStats = signatureStatsByLead[lead.id];
                   const isTransferredWon =
                     !!workspaceId &&
@@ -888,12 +874,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     lead.workspace_id !== workspaceId &&
                     lead.origin_workspace_id === workspaceId;
 
-                  // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded, 6) no activity, 7) normal
+                  // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded, 6) no schedule, 7) normal
                   const cardStatus = getCardStatus(lead);
                   const isWon = cardStatus === "ganho";
                   const isLost = cardStatus === "perdido";
                   const isTrash = cardStatus === "lixeira";
-                  const isNaturalState = !isWon && !isLost && !isTrash && !hasOverdue && !noActivity && !overdue;
+                  const isNaturalState = !isWon && !isLost && !isTrash && scheduleState.state === "scheduled" && !overdue;
+
                   const cardStyle = isWon
                     ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
                     : isLost
@@ -902,11 +889,10 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
                     : hasOverdue
                     ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
-                    : overdue && hasActivity
-                    ? "bg-red-50/60 dark:bg-red-950/20 border-red-200/60 dark:border-red-800/40"
-                    : noActivity
+                    : scheduleState.state === "none"
                     ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
+
 
                   const dragDisabled = isTransferredWon || isTrash || isMobile;
 
@@ -935,7 +921,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       <div
                         className={cn(
                           "absolute top-0 left-0 right-0 h-[2.5px] rounded-t-xl",
-                          hasOverdue ? "bg-destructive" : overdue ? "bg-destructive/70" : noActivity ? "bg-amber-400" : ""
+                          hasOverdue ? "bg-destructive" : scheduleState.state === "none" ? "bg-amber-400" : ""
                         )}
                         style={isNaturalState ? {
                           background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))`,
@@ -1018,29 +1004,39 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               {hasOverdue && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="h-2 w-2 rounded-full bg-destructive animate-pulse shrink-0" />
+                                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-800 shrink-0">
+                                      <CalendarClock className="h-3 w-3 text-red-600 dark:text-red-400" />
+                                      <span className="text-[9px] font-bold text-red-700 dark:text-red-300 uppercase">
+                                        Agendamento atrasado
+                                      </span>
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="text-[10px]">
-                                    {overdueActCount} atividade{overdueActCount > 1 ? "s" : ""} atrasada{overdueActCount > 1 ? "s" : ""}
+                                    {scheduleState.nextSchedule?.metadata?.scheduled_at ? 
+                                      `Agendado para ${new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleString("pt-BR")}` : 
+                                      "Agendamento atrasado"}
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              {!hasOverdue && noActivity && (
+                              {scheduleState.state === "scheduled" && scheduleState.nextSchedule && (
+                                <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
+                                  <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                                  <span className="text-[8px] font-medium text-muted-foreground">
+                                    {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleString("pt-BR", {
+                                      day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                              {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-[10px]">Sem atividade</TooltipContent>
+                                  <TooltipContent side="top" className="text-[10px]">Sem agendamento</TooltipContent>
                                 </Tooltip>
                               )}
-                              {!hasOverdue && !noActivity && overdue && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Clock className="h-3 w-3 shrink-0 text-destructive" />
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-[10px]">Tempo excedido na etapa</TooltipContent>
-                                </Tooltip>
-                              )}
+
                             </div>
                             {/* Company name */}
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
