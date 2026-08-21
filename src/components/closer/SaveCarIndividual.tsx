@@ -11,6 +11,7 @@ import { useCrmLeads } from "@/hooks/useCrmLeads";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { toast } from "sonner";
+import { resolveCloserTemplate, normalizePhone } from "@/utils/closerUtils";
 
 function CopyButton({ text, onCopy }: { text: string; onCopy?: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -112,16 +113,20 @@ export function SaveCarIndividual() {
 
   const getProcessedText = (text: string) => {
     if (!text) return "";
-    let processed = text
-      .replace(/\[Nome\]/g, clientData.name || "[Nome]")
-      .replace(/\[Placa\/Modelo\]/g, clientData.vehicle || "[Placa/Modelo]")
-      .replace(/\[Telefone\]/g, clientData.phone || "[Telefone]")
-      .replace(/\[Empresa\]/g, "Accord Pipe")
-      .replace(/\[NomeVendedor\]/g, profile?.name || "[Vendedor]")
-      .replace(/\[ValorIndicação\]/g, "R$ 50,00");
     
-    // Split "Vendeu" script if it has both steps in one branch_content
-    // Must use processed text to split correctly if substitutions happened
+    let processed = resolveCloserTemplate(text, {
+      lead: {
+        contact_name: clientData.name,
+        phone: clientData.phone,
+        metadata: { vehicle: clientData.vehicle }
+      },
+      user: profile,
+      workspaceName: "Accord Sales", // Fallback or fetch from context
+      customValues: {
+        "ValorIndicação": "R$ 50,00"
+      }
+    });
+    
     if (processed.includes("Está sem veículo atualmente?") && processed.includes("Bacana!")) {
       const parts = processed.split("Bacana!");
       return vendeuStep === 1 
@@ -158,10 +163,10 @@ export function SaveCarIndividual() {
 
       await syncToKanban();
       
-      let phone = clientData.phone.replace(/\D/g, "");
-      // Add DDI 55 if not present and length suggests BR mobile
-      if (phone.length === 11 && !phone.startsWith("55")) {
-        phone = "55" + phone;
+      let phone = normalizePhone(clientData.phone);
+      if (!phone || phone.length < 10) {
+        toast.error("Telefone inválido.");
+        return;
       }
       
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;

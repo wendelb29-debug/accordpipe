@@ -305,6 +305,17 @@ export const PERMISSION_MODULES: PermissionModule[] = [
     ],
   },
 
+  // ===== Closer Config =====
+  {
+    key: "closer_config",
+    label: "Configurações Closer",
+    icon: Settings,
+    group: "Usuários e Acessos",
+    permissions: [
+      { key: "configure_closer", label: "Configurar Closer", description: "Gerenciar scripts, ramificações e playbooks do Closer", restrictedTo: ["ceo", "master", "admin"] },
+    ],
+  },
+
   // ===== WhatsApp =====
   {
     key: "whatsapp",

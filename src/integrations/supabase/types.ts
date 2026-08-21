@@ -2029,6 +2029,7 @@ export type Database = {
           branch_key: string
           created_at: string | null
           id: string
+          is_active: boolean | null
           label: string
           next_step_key: string | null
           script_id: string
@@ -2039,6 +2040,7 @@ export type Database = {
           branch_key: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           label: string
           next_step_key?: string | null
           script_id: string
@@ -2049,6 +2051,7 @@ export type Database = {
           branch_key?: string
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           label?: string
           next_step_key?: string | null
           script_id?: string
@@ -11536,6 +11539,84 @@ export type Database = {
             foreignKeyName: "whatsapp_workspace_config_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_closer_settings: {
+        Row: {
+          closer_enabled: boolean
+          created_at: string | null
+          created_by: string | null
+          default_send_message_script_id: string | null
+          default_whatsapp_script_id: string | null
+          id: string
+          playbook_id: string | null
+          tenant_id: string
+          updated_at: string | null
+          updated_by: string | null
+          workspace_id: string
+        }
+        Insert: {
+          closer_enabled?: boolean
+          created_at?: string | null
+          created_by?: string | null
+          default_send_message_script_id?: string | null
+          default_whatsapp_script_id?: string | null
+          id?: string
+          playbook_id?: string | null
+          tenant_id: string
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id: string
+        }
+        Update: {
+          closer_enabled?: boolean
+          created_at?: string | null
+          created_by?: string | null
+          default_send_message_script_id?: string | null
+          default_whatsapp_script_id?: string | null
+          id?: string
+          playbook_id?: string | null
+          tenant_id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_closer_settings_default_send_message_script_id_fkey"
+            columns: ["default_send_message_script_id"]
+            isOneToOne: false
+            referencedRelation: "closer_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_closer_settings_default_whatsapp_script_id_fkey"
+            columns: ["default_whatsapp_script_id"]
+            isOneToOne: false
+            referencedRelation: "closer_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_closer_settings_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "closer_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_closer_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_closer_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
             referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },

@@ -20,6 +20,7 @@ export interface Script {
   content: string;
   channel: 'whatsapp' | 'call' | 'all';
   sort_order: number;
+  is_active: boolean;
   branches?: ScriptBranch[];
 }
 
@@ -31,6 +32,7 @@ export interface ScriptBranch {
   next_step_key: string | null;
   branch_content: string | null;
   sort_order: number;
+  is_active: boolean;
 }
 
 export interface CloserSession {
@@ -46,11 +48,37 @@ export interface CloserSession {
   created_at: string;
 }
 
+export interface WorkspaceCloserSettings {
+  id: string;
+  tenant_id: string;
+  workspace_id: string;
+  closer_enabled: boolean;
+  playbook_id: string | null;
+  default_send_message_script_id: string | null;
+  default_whatsapp_script_id: string | null;
+  updated_at: string;
+}
+
 export function useCloser(playbookId?: string) {
   const { profile, user } = useAuth();
   const { activeWorkspaceId } = useWorkspaceContext();
   const queryClient = useQueryClient();
   const tenantId = profile?.company_id;
+
+  const { data: settings, isLoading: loadingSettings } = useQuery({
+    queryKey: ["workspace-closer-settings", tenantId, activeWorkspaceId],
+    queryFn: async () => {
+      if (!tenantId || !activeWorkspaceId) return null;
+      const { data, error } = await supabase
+        .from("workspace_closer_settings")
+        .select("*")
+        .eq("workspace_id", activeWorkspaceId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as WorkspaceCloserSettings;
+    },
+    enabled: !!tenantId && !!activeWorkspaceId,
+  });
 
   const { data: playbooks, isLoading: loadingPlaybooks } = useQuery({
     queryKey: ["closer-playbooks", tenantId, activeWorkspaceId],
@@ -63,36 +91,38 @@ export function useCloser(playbookId?: string) {
         .or(`tenant_id.eq.${tenantId},tenant_id.is.null`)
         .order("name");
       if (error) throw error;
-      const sorted = [...(data || [])]; // Sort by name from query is fine, or sort locally if column existed
-      return sorted as Playbook[];
+      return data as Playbook[];
     },
     enabled: !!tenantId,
   });
 
+  const effectivePlaybookId = playbookId || settings?.playbook_id;
+
   const { data: scripts, isLoading: loadingScripts } = useQuery({
-    queryKey: ["closer-scripts", tenantId, activeWorkspaceId, playbookId],
+    queryKey: ["closer-scripts", tenantId, activeWorkspaceId, effectivePlaybookId],
     queryFn: async () => {
-      if (!playbookId) return [];
+      if (!effectivePlaybookId) return [];
       const { data, error } = await supabase
         .from("closer_scripts")
         .select(`
           *,
           branches:closer_script_branches(*)
         `)
-        .eq("playbook_id", playbookId)
+        .eq("playbook_id", effectivePlaybookId)
         .eq("is_active", true);
       
       if (error) throw error;
       
-      // Order scripts and branches by sort_order
       const sortedScripts = [...(data || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(s => ({
         ...s,
-        branches: [...(s.branches || [])].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        branches: [...(s.branches || [])]
+          .filter(b => b.is_active !== false)
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       }));
       
-      return sortedScripts as Script[];
+      return sortedScripts as any as Script[];
     },
-    enabled: !!playbookId,
+    enabled: !!effectivePlaybookId,
   });
 
   const createSession = useMutation({
@@ -137,12 +167,40 @@ export function useCloser(playbookId?: string) {
     }
   });
 
+  const updateSettings = useMutation({
+    mutationFn: async (updates: Partial<WorkspaceCloserSettings>) => {
+      if (!tenantId || !activeWorkspaceId) throw new Error("Missing context");
+      const { data, error } = await supabase
+        .from("workspace_closer_settings")
+        .upsert({
+          ...updates,
+          tenant_id: tenantId,
+          workspace_id: activeWorkspaceId,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-closer-settings", tenantId, activeWorkspaceId] });
+      toast.success("Configurações atualizadas!");
+    },
+    onError: (err) => {
+      console.error(err);
+      toast.error("Erro ao atualizar configurações");
+    }
+  });
+
   return {
+    settings,
     playbooks,
     scripts,
-    isLoading: loadingPlaybooks || loadingScripts,
+    isLoading: loadingSettings || loadingPlaybooks || loadingScripts,
     createSession,
     logEvent,
-    updateSession
+    updateSession,
+    updateSettings
   };
 }
