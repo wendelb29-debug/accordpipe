@@ -165,6 +165,19 @@ export function LeadAtividadesTab({
       toast.error("Informe o título da atividade");
       return;
     }
+    
+    // Validation: if reminder is not "none", at least one channel must be selected
+    if (form.reminder !== "none" && !reminderChannels.system && !reminderChannels.email) {
+      toast.error("Selecione pelo menos um canal de notificação.");
+      return;
+    }
+
+    // Validation: if email is marked, user must have an email
+    if (form.reminder !== "none" && reminderChannels.email && !profile?.email) {
+      toast.error("Cadastre um e-mail para ativar este canal.");
+      return;
+    }
+
     setTitleError(false);
     setSaving(true);
 
@@ -183,7 +196,7 @@ export function LeadAtividadesTab({
       if (editingId) {
         const existing = activities.find(a => a.id === editingId);
         const mergedMeta = { ...(existing?.metadata || {}), ...metadata };
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from("crm_lead_activities")
           .update({
             type: form.type === "internal" ? "activity" : form.type,
@@ -193,20 +206,19 @@ export function LeadAtividadesTab({
           } as any)
           .eq("id", editingId);
 
-        if (error) {
-          toast.error("Erro ao atualizar atividade");
-          return;
-        }
+        if (updateError) throw updateError;
 
-        // Reschedule reminder queue row if exists
+        // Cleanup and Reschedule reminder
         if (profile?.user_id) {
           await supabase.from("activity_reminders").delete().eq("activity_id", editingId);
-          if (form.reminder !== "none" && (reminderChannels.system || reminderChannels.email)) {
+          
+          if (form.reminder !== "none") {
             const reminderMinutes = parseInt(form.reminder);
             const scheduledDate = new Date(scheduledAt);
             const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
+            
             if (reminderDate > new Date()) {
-              await supabase.from("activity_reminders").insert({
+              const { error: remError } = await supabase.from("activity_reminders").insert({
                 activity_id: editingId,
                 user_id: profile.user_id,
                 lead_id: lead.id,
@@ -216,6 +228,9 @@ export function LeadAtividadesTab({
                 notify_system: reminderChannels.system,
                 notify_email: reminderChannels.email,
               });
+              if (remError) {
+                toast.warning("Agendamento atualizado, mas não foi possível configurar o lembrete.");
+              }
             }
           }
         }
@@ -242,7 +257,6 @@ export function LeadAtividadesTab({
         metadata,
       });
 
-
       if (!result) {
         toast.error("Erro ao criar atividade. Verifique suas permissões.");
         return;
@@ -253,36 +267,24 @@ export function LeadAtividadesTab({
         const reminderMinutes = parseInt(form.reminder);
         const scheduledDate = new Date(scheduledAt);
         const reminderDate = new Date(scheduledDate.getTime() - reminderMinutes * 60 * 1000);
+        
         if (reminderDate > new Date()) {
-          // Multi-channel queue row (system + email) – consumed by edge fn
-          if (reminderChannels.system || reminderChannels.email) {
-            await supabase.from("activity_reminders").insert({
-              activity_id: result.id,
-              user_id: profile.user_id,
-              lead_id: lead.id,
-              servidor_id: lead.servidor_id,
-              reminder_minutes: reminderMinutes,
-              reminder_scheduled_at: reminderDate.toISOString(),
-              notify_system: reminderChannels.system,
-              notify_email: reminderChannels.email,
-            });
-          }
-
-          // Legacy in-app notification (kept for backward compatibility)
-          await supabase.rpc("create_notification", {
-            _user_id: profile.user_id,
-            _title: `Lembrete: ${form.title}`,
-            _message: `Atividade "${form.title}" agendada para ${new Date(scheduledAt).toLocaleString("pt-BR")} com ${lead.company_name}.`,
-            _type: "reminder",
-            _servidor_id: lead.servidor_id,
-            _metadata: {
-              lead_id: lead.id,
-              scheduled_at: scheduledAt,
-              reminder_at: reminderDate.toISOString(),
-              activity_type: form.type,
-              channels: reminderChannels,
-            },
+          const { error: remError } = await supabase.from("activity_reminders").insert({
+            activity_id: result.id,
+            user_id: profile.user_id,
+            lead_id: lead.id,
+            servidor_id: lead.servidor_id,
+            reminder_minutes: reminderMinutes,
+            reminder_scheduled_at: reminderDate.toISOString(),
+            notify_system: reminderChannels.system,
+            notify_email: reminderChannels.email,
           });
+          
+          if (remError) {
+            toast.warning("Agendamento criado, mas não foi possível configurar o lembrete.");
+          }
+        } else {
+          toast.warning("Lembrete ignorado pois o horário já passou.");
         }
       }
 
@@ -293,7 +295,7 @@ export function LeadAtividadesTab({
       if (onScheduleChanged) onScheduleChanged(lead.id);
     } catch (err) {
       console.error("Error creating activity:", err);
-      toast.error("Erro ao criar atividade");
+      toast.error("Erro ao processar atividade");
     } finally {
       setSaving(false);
     }
@@ -625,8 +627,11 @@ export function LeadAtividadesTab({
                       onCheckedChange={(c) => setReminderChannels((p) => ({ ...p, email: c === true }))}
                       disabled={!profile?.email}
                     />
-                    <span>📧 E-mail {!profile?.email ? "(sem e-mail no perfil)" : `(${profile.email})`}</span>
+                    <span>📧 E-mail {profile?.email ? `(${profile.email})` : "(cadastre um e-mail para ativar)"}</span>
                   </label>
+                  {!profile?.email && (
+                    <p className="text-[9px] text-amber-600 font-medium">Cadastre um e-mail no perfil para ativar este canal.</p>
+                  )}
                 </div>
               </div>
             )}
