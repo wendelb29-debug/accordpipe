@@ -398,12 +398,13 @@ function QuickPostComposer({
         onClick={() => setCollapsed(false)}
         className="group w-full text-left animate-fade-in rounded-xl bg-white dark:bg-card border-[0.5px] border-border shadow-sm hover:border-primary/40 hover:shadow-md transition-all px-5 py-3.5 flex items-center gap-3"
       >
-        <Avatar className="h-9 w-9 ring-2 ring-primary/20 shrink-0">
-          {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-          <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
-            {initials(profile?.name)}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          userId={profile?.user_id}
+          name={profile?.name}
+          avatarUrl={profile?.avatar_url}
+          size={36}
+          className="ring-2 ring-primary/20 shrink-0"
+        />
         <span className="flex-1 text-sm text-muted-foreground group-hover:text-foreground transition-colors">
           Compartilhe uma atualização com sua equipe…
         </span>
@@ -464,12 +465,13 @@ function QuickPostComposer({
       <div className="px-5 pt-4 pb-2">
         {tab === "Mensagem" && (
           <div className="flex items-start gap-3">
-            <Avatar className="h-10 w-10 ring-2 ring-primary/20 shrink-0">
-              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-              <AvatarFallback className="bg-gradient-to-br from-primary to-violet-600 text-white text-xs font-semibold">
-                {initials(profile?.name)}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              userId={profile?.user_id}
+              name={profile?.name}
+              avatarUrl={profile?.avatar_url}
+              size={40}
+              className="ring-2 ring-primary/20 shrink-0"
+            />
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
