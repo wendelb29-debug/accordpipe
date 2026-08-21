@@ -135,9 +135,9 @@ export function CloserPanel() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-background font-sans">
+    <div className="h-full flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden bg-background font-sans">
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-border/50">
+      <div className="shrink-0 p-4 flex items-center justify-between border-b border-border/50">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Closer — Recuperação de Associados</h1>
           <div className="hidden sm:flex items-center gap-1 rounded-full bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold">
@@ -147,7 +147,10 @@ export function CloserPanel() {
       </div>
 
       {/* Main Content - Only Individual Recovery */}
-      <div className="flex-1 overflow-y-auto">
+      <div 
+        data-testid="closer-scroll-container"
+        className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain scroll-smooth"
+      >
         <SaveCarIndividual />
       </div>
     </div>
