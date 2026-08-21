@@ -9,6 +9,7 @@ export interface LeadScheduleResult {
 }
 
 const COMPLETED_STATUSES = ["completed", "concluida", "done", "realizado", "concluído", "no_show"];
+const CANCELLED_STATUSES = ["cancelled", "canceled", "cancelado"];
 
 export function getLeadScheduleState(activities: ActivityItem[], now: Date = new Date()): LeadScheduleResult {
   if (!activities || activities.length === 0) {
@@ -24,10 +25,11 @@ export function getLeadScheduleState(activities: ActivityItem[], now: Date = new
     const meta = activity.metadata || {};
     const status = (activity.status || meta.activity_status || "").toLowerCase();
     
-    // Check if it's explicitly completed/cancelled
+    // Check if it's explicitly completed/cancelled/no-show
     if (COMPLETED_STATUSES.includes(status)) return false;
     if (activity.completed_at) return false;
-    if (["cancelled", "canceled", "cancelado"].includes(status)) return false;
+    if (activity.no_show_at) return false;
+    if (CANCELLED_STATUSES.includes(status)) return false;
 
     // Must have a scheduled date
     const scheduledAt = meta.scheduled_at || meta.scheduled_date;

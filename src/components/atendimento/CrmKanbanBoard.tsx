@@ -888,11 +888,10 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     : isTrash
                     ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
                     : hasOverdue
-                    ? "bg-red-50/70 dark:bg-red-950/30 border-red-300/70 dark:border-red-800/50"
+                    ? "bg-red-50/90 dark:bg-red-950/40 border-red-500 dark:border-red-700"
                     : scheduleState.state === "none"
-                    ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40"
+                    ? "bg-amber-50/90 dark:bg-amber-950/20 border-amber-400/80 dark:border-amber-700/60"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
-
 
                   const dragDisabled = isTransferredWon || isTrash || isMobile;
 
@@ -921,7 +920,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                       <div
                         className={cn(
                           "absolute top-0 left-0 right-0 h-[2.5px] rounded-t-xl",
-                          hasOverdue ? "bg-destructive" : scheduleState.state === "none" ? "bg-amber-400" : ""
+                          hasOverdue ? "bg-red-600" : scheduleState.state === "none" ? "bg-amber-500" : ""
                         )}
                         style={isNaturalState ? {
                           background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))`,
@@ -1004,25 +1003,25 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               {hasOverdue && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/50 border border-red-200 dark:border-red-800 shrink-0">
-                                      <CalendarClock className="h-3 w-3 text-red-600 dark:text-red-400" />
-                                      <span className="text-[9px] font-bold text-red-700 dark:text-red-300 uppercase">
+                                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 border border-red-500/50 dark:border-red-700/60 shrink-0">
+                                      <CalendarClock className="h-3 w-3 text-red-700 dark:text-red-400" />
+                                      <span className="text-[9px] font-bold text-red-800 dark:text-red-200 uppercase">
                                         Agendamento atrasado
                                       </span>
                                     </div>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-[10px]">
+                                  <TooltipContent side="top" className="text-[10px] bg-destructive text-destructive-foreground border-none">
                                     {scheduleState.nextSchedule?.metadata?.scheduled_at ? 
                                       `Agendado para ${new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleString("pt-BR")}` : 
                                       "Agendamento atrasado"}
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              {scheduleState.state === "scheduled" && scheduleState.nextSchedule && (
+                              {scheduleState.state === "scheduled" && scheduleState.nextSchedule && !isWon && !isLost && !isTrash && (
                                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0">
                                   <Clock className="h-2.5 w-2.5 text-muted-foreground" />
                                   <span className="text-[8px] font-medium text-muted-foreground">
-                                    {new Date(scheduleState.nextSchedule.metadata.scheduled_at).toLocaleString("pt-BR", {
+                                    Agendado: {new Date(scheduleState.nextSchedule.metadata.scheduled_at || scheduleState.nextSchedule.metadata.scheduled_date).toLocaleString("pt-BR", {
                                       day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
                                     })}
                                   </span>
@@ -1031,7 +1030,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                               {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <AlertTriangle className="h-3 w-3 shrink-0 text-amber-500" />
+                                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0">
+                                      <AlertTriangle className="h-3 w-3 text-amber-600 dark:text-amber-500" />
+                                      <span className="text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase">
+                                        Sem agendamento
+                                      </span>
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="text-[10px]">Sem agendamento</TooltipContent>
                                 </Tooltip>
