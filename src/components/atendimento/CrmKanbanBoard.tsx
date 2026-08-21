@@ -107,10 +107,12 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const { dynamicStages, columns: kanbanCols, loading: colsLoading } = useKanbanColumns(workspaceId);
   const hasDynamicColumns = kanbanCols.length > 0;
 
-  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, totalLeads, totalPS, totalMRR, stageStats } = useCrmLeads(
+  const [selectedUserId, setSelectedUserId] = useState<string>("all");
+  const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, isSupervisor } = useCrmLeads(
     "commercial",
     workspaceId,
-    hasDynamicColumns ? dynamicStages : undefined
+    hasDynamicColumns ? dynamicStages : undefined,
+    selectedUserId
   );
   const { profile } = useAuth();
   const companyId = useActiveCompanyId();
@@ -164,7 +166,6 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   const [linkCopied, setLinkCopied] = useState(false);
   const [formLinkOpen, setFormLinkOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>("all");
   const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string; avatar_url?: string | null }[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchTerm);
@@ -228,7 +229,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
     }
   }, []);
 
-  const isAdminOrMaster = profile?.is_master || false;
+  const isAdminOrMaster = isSupervisor;
 
   useEffect(() => {
     const fetchTags = async () => {
@@ -392,25 +393,19 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
   };
 
   useEffect(() => {
-    if (!isAdminOrMaster || !companyId) return;
+    if (!workspaceId) return;
     const fetchTeam = async () => {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", profile.user_id)
-        .maybeSingle();
-      const hasAdminRole = roleData?.role === "admin" || roleData?.role === "ceo";
-      if (!profile.is_master && !hasAdminRole) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_id, name, avatar_url")
-        .eq("company_id", companyId)
-        .eq("is_active", true)
-        .order("name");
-      if (data) setTeamMembers(data);
+      const { data, error } = await supabase.rpc("get_workspace_team_members", {
+        p_workspace_id: workspaceId
+      });
+      if (!error && data) {
+        setTeamMembers(data as any);
+      } else {
+        console.error("Error fetching workspace team members:", error);
+      }
     };
     fetchTeam();
-  }, [isAdminOrMaster, companyId, profile?.user_id, profile?.is_master]);
+  }, [workspaceId]);
 
   const copyFormLink = async () => {
     let cId = companyId;
