@@ -94,7 +94,7 @@ function AtendimentoContent() {
             <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
           </TabsContent>
           <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
-            <ImportarPlanilha />
+            <ImportarPlanilha workspaceId={selectedWsId} />
           </TabsContent>
           <TabsContent value="closer" className="flex-1 overflow-hidden mt-0">
             <CloserPanel />
@@ -150,7 +150,7 @@ function AtendimentoContent() {
           <CrmKanbanBoard searchTerm={crmSearch} workspaceId={selectedWsId} />
         </TabsContent>
         <TabsContent value="importar" className="flex-1 overflow-hidden mt-0">
-          <ImportarPlanilha />
+          <ImportarPlanilha workspaceId={selectedWsId} />
         </TabsContent>
       </Tabs>
     </div>
