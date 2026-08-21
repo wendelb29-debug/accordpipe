@@ -962,11 +962,13 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                     ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
                     : hasOverdue
                     ? "bg-red-50/90 dark:bg-red-950/40 border-red-500 dark:border-red-700 shadow-[0_0_15px_-3px_rgba(239,68,68,0.2)]"
-                    : scheduleState.state === "none"
+                    : scheduleState.state === "scheduled" && !isWon && !isLost && !isTrash
+                    ? "bg-white dark:bg-slate-900 border-border/40 dark:border-[rgba(255,255,255,0.07)]"
+                    : scheduleState.state === "none" && !isWon && !isLost && !isTrash
                     ? "bg-[#FFFBEB] dark:bg-amber-950/20 border-amber-400/80 dark:border-amber-700/60"
                     : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
 
-                  const isNaturalState = !isWon && !isLost && !isTrash && scheduleState.state === "scheduled";
+                  const isNaturalState = !isWon && !isLost && !isTrash && (scheduleState.state === "scheduled" || scheduleState.state === "none");
 
                   const dragDisabled = isTransferredWon || isTrash || isMobile;
 
@@ -1220,7 +1222,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                                 <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 border border-red-500/50 dark:border-red-700/60 shrink-0 cursor-help">
                                   <CalendarClock className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                                   <span className="text-[10px] font-bold text-red-700 dark:text-red-300 uppercase">
-                                    Agendamento atrasado
+                                    Agendamento em atraso
                                   </span>
                                 </div>
                               </TooltipTrigger>
