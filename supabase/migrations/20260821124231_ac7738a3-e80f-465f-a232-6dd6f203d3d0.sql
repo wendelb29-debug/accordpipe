@@ -1,0 +1,1 @@
+DELETE FROM public.crm_leads WHERE workspace_id = '0123a22e-807e-424f-abfd-b3a570435f2b';
