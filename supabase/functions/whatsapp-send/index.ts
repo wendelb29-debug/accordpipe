@@ -214,12 +214,18 @@ async function sendUazapi(
     console.log("[sendUazapi] response:", rawText.slice(0, 500));
 
     if (!res.ok) {
+      const msg = String(body?.message || rawText || "");
+      const disconnected = /disconnect|not reconnectable|session|unauthorized|not logged/i.test(msg) ||
+        res.status === 401 || res.status === 403 || res.status === 503;
       return {
         success: false,
-        message: `Uazapi HTTP ${res.status}: ${rawText.slice(0, 250) || "(sem corpo)"}`,
+        message: disconnected
+          ? "WhatsApp desconectado. Reconecte a instância em Configurações > WhatsApp (leia o QR Code novamente) e tente enviar de novo."
+          : `Uazapi HTTP ${res.status}: ${rawText.slice(0, 250) || "(sem corpo)"}`,
         raw: body,
       };
     }
+
 
     const externalId =
       body?.key?.id || body?.id || body?.messageId || body?.message?.id || undefined;
