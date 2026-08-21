@@ -44,6 +44,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ActivityItem } from "./LeadAtividadesTab";
+import { getLeadScheduleState } from "@/utils/leadSchedule";
+
 
 const stageIcons: Record<string, React.ElementType> = {
   "novos": Sparkles,
