@@ -1248,7 +1248,7 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
                           {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0 cursor-help shadow-sm">
+                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-[#FFFBEB] dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0 cursor-help shadow-sm">
                                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                                   <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase">
                                     Sem agendamento
