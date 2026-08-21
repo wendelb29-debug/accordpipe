@@ -1,0 +1,1048 @@
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useBackNavigation } from "@/contexts/BackNavigationContext";
+import { Clock, Users, MessageSquare, Phone, RefreshCw, FileSignature, MoreVertical, Edit, Loader2, Plus, Sparkles, Link2, Check, Tag, Search, Filter, CalendarClock, AlertTriangle, CheckCircle, } from "lucide-react";
+import { KanbanQuickActionZones } from "./KanbanQuickActionZones";
+import { TransferWorkspaceDialog } from "./TransferWorkspaceDialog";
+import { LostReasonDialog } from "./LostReasonDialog";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { getLeadContractSignatureStats } from "@/lib/contractSigners";
+import { CrmLeadDialog } from "./CrmLeadDialog";
+import { CrmLeadDetailView } from "./CrmLeadDetailView";
+import { FormLinkDialog } from "./FormLinkDialog";
+import { CrmSearchDialog } from "./CrmSearchDialog";
+import { FilterPanel, emptyFilterState, countActiveFilters, applyFilters, getCardStatus, } from "./FilterPanel";
+import { useCrmLeads, STAGES } from "@/hooks/useCrmLeads";
+import { useKanbanColumns } from "@/hooks/useKanbanColumns";
+import { useNewLeadNotifications } from "@/hooks/useNewLeadNotifications";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useActiveCompanyId } from "@/hooks/useActiveCompanyId";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { getLeadScheduleState } from "@/utils/leadSchedule";
+const stageIcons = {
+    "novos": Sparkles,
+    "standby": Clock,
+    "primeiro-contato": MessageSquare,
+    "call-negocio": Phone,
+    "follow-up-1": RefreshCw,
+    "follow-up-2": RefreshCw,
+    "contrato-fechado": FileSignature,
+};
+// Premium stage colors for the ACCORD design
+const stageColors = {
+    "novos": { bg: "bg-emerald-50 dark:bg-emerald-950/30", text: "text-emerald-700 dark:text-emerald-400", icon: "bg-emerald-500", border: "border-emerald-200 dark:border-emerald-800" },
+    "standby": { bg: "bg-slate-50 dark:bg-slate-900/30", text: "text-slate-600 dark:text-slate-400", icon: "bg-slate-500", border: "border-slate-200 dark:border-slate-700" },
+    "primeiro-contato": { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-700 dark:text-blue-400", icon: "bg-blue-500", border: "border-blue-200 dark:border-blue-800" },
+    "call-negocio": { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-700 dark:text-amber-400", icon: "bg-amber-500", border: "border-amber-200 dark:border-amber-800" },
+    "follow-up-1": { bg: "bg-purple-50 dark:bg-purple-950/30", text: "text-purple-700 dark:text-purple-400", icon: "bg-purple-500", border: "border-purple-200 dark:border-purple-800" },
+    "follow-up-2": { bg: "bg-indigo-50 dark:bg-indigo-950/30", text: "text-indigo-700 dark:text-indigo-400", icon: "bg-indigo-500", border: "border-indigo-200 dark:border-indigo-800" },
+    "contrato-fechado": { bg: "bg-green-50 dark:bg-green-950/30", text: "text-green-700 dark:text-green-400", icon: "bg-green-500", border: "border-green-200 dark:border-green-800" },
+};
+const formatCurrency = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const isLeadOverdueDynamic = (lead, slaDays) => {
+    if (!slaDays || slaDays <= 0 || !lead.stage_entered_at)
+        return false;
+    const enteredAt = new Date(lead.stage_entered_at);
+    const now = new Date();
+    const diffDays = (now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays > slaDays;
+};
+const isLeadOverdue = (lead, stageId) => {
+    const stage = STAGES.find((s) => s.id === stageId);
+    if (!stage?.daysLimit || !lead.stage_entered_at)
+        return false;
+    const match = stage.daysLimit.match(/^(\d+)d$/);
+    if (!match)
+        return false;
+    const limitDays = parseInt(match[1], 10);
+    if (limitDays <= 0)
+        return false;
+    return isLeadOverdueDynamic(lead, limitDays);
+};
+const getProgressColor = (lead, stageId, hasActivity, hasOverdueActivity) => {
+    if (hasOverdueActivity)
+        return "bg-red-500";
+    if (!hasActivity)
+        return "bg-amber-400";
+    if (isLeadOverdue(lead, stageId))
+        return "bg-red-400";
+    const days = Math.floor((Date.now() - new Date(lead.stage_entered_at).getTime()) / (1000 * 60 * 60 * 24));
+    if (days <= 2)
+        return "bg-emerald-500";
+    if (days <= 5)
+        return "bg-amber-400";
+    return "bg-red-400";
+};
+export function CrmKanbanBoard({ searchTerm, workspaceId }) {
+    // Fetch dynamic kanban columns for this workspace
+    const { dynamicStages, columns: kanbanCols, loading: colsLoading } = useKanbanColumns(workspaceId);
+    const hasDynamicColumns = kanbanCols.length > 0;
+    const [selectedUserId, setSelectedUserId] = useState("all");
+    const { leads, loading, createLead, updateLead, deleteLead, moveToStage, markAsWonAndTransfer, isSupervisor, stageStats } = useCrmLeads("commercial", workspaceId, hasDynamicColumns ? dynamicStages : undefined, selectedUserId);
+    const { profile } = useAuth();
+    const companyId = useActiveCompanyId();
+    const navigate = useNavigate();
+    const isMobile = useIsMobile();
+    const stageColumnRefs = useRef({});
+    const [activeMobileStageId, setActiveMobileStageId] = useState(null);
+    const scrollToMobileStage = (stageId) => {
+        const el = stageColumnRefs.current[stageId];
+        if (el)
+            el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        setActiveMobileStageId(stageId);
+    };
+    // Realtime visual toast when a new lead arrives in this workspace/tenant
+    useNewLeadNotifications(companyId, workspaceId);
+    const [draggedLead, setDraggedLead] = useState(null);
+    const [dragOverStage, setDragOverStage] = useState(null);
+    const [selectedLead, setSelectedLead] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [isNew, setIsNew] = useState(false);
+    const [detailLead, setDetailLead] = useState(null);
+    const [statusFilter, setStatusFilter] = useState("open");
+    const [transferOpen, setTransferOpen] = useState(false);
+    const [lostReasonOpen, setLostReasonOpen] = useState(false);
+    const [pendingLead, setPendingLead] = useState(null);
+    const [trashLeads, setTrashLeads] = useState([]);
+    const { pushBackHandler } = useBackNavigation();
+    // Register back handler when lead detail is open
+    useEffect(() => {
+        if (!detailLead)
+            return;
+        const unregister = pushBackHandler(() => {
+            setDetailLead(null);
+            return true;
+        });
+        return unregister;
+    }, [detailLead, pushBackHandler]);
+    // Auto-open lead detail when navigated with ?lead=ID (e.g. coming back from Inbox)
+    const [searchParamsKb, setSearchParamsKb] = useSearchParams();
+    useEffect(() => {
+        const leadParam = searchParamsKb.get("lead");
+        if (!leadParam || loading)
+            return;
+        const target = leads.find((l) => l.id === leadParam);
+        if (target) {
+            setDetailLead(target);
+            searchParamsKb.delete("lead");
+            setSearchParamsKb(searchParamsKb, { replace: true });
+        }
+    }, [searchParamsKb, leads, loading, setSearchParamsKb]);
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [formLinkOpen, setFormLinkOpen] = useState(false);
+    const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [localSearch, setLocalSearch] = useState(searchTerm);
+    const [selectedTags, setSelectedTags] = useState([]);
+    const [availableTags, setAvailableTags] = useState([]);
+    const [leadActivities, setLeadActivities] = useState({});
+    const timerRef = useRef(null);
+    const [now, setNow] = useState(new Date());
+    const [signatureStatsByLead, setSignatureStatsByLead] = useState({});
+    const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+    const [advancedFilters, setAdvancedFilters] = useState({
+        ...emptyFilterState,
+        status: ["aberto"],
+    });
+    const [filterApplying, setFilterApplying] = useState(false);
+    const activeFilterCount = countActiveFilters(advancedFilters);
+    // Skeleton flash quando o filtro muda, antes de renderizar cards coloridos
+    useEffect(() => {
+        setFilterApplying(true);
+        const t = setTimeout(() => setFilterApplying(false), 220);
+        return () => clearTimeout(t);
+    }, [advancedFilters]);
+    // Drag-to-scroll
+    const pipelineRef = useRef(null);
+    const isDraggingScroll = useRef(false);
+    const startX = useRef(0);
+    const scrollLeftStart = useRef(0);
+    const handlePipelineMouseDown = useCallback((e) => {
+        if (e.target.closest('.kanban-card'))
+            return;
+        const el = pipelineRef.current;
+        if (!el)
+            return;
+        isDraggingScroll.current = true;
+        startX.current = e.pageX - el.offsetLeft;
+        scrollLeftStart.current = el.scrollLeft;
+        el.style.cursor = 'grabbing';
+        el.style.userSelect = 'none';
+    }, []);
+    const handlePipelineMouseMove = useCallback((e) => {
+        if (!isDraggingScroll.current)
+            return;
+        e.preventDefault();
+        const el = pipelineRef.current;
+        if (!el)
+            return;
+        const x = e.pageX - el.offsetLeft;
+        const walk = (x - startX.current) * 1.3;
+        el.scrollLeft = scrollLeftStart.current - walk;
+    }, []);
+    const handlePipelineMouseUp = useCallback(() => {
+        isDraggingScroll.current = false;
+        const el = pipelineRef.current;
+        if (el) {
+            el.style.cursor = 'grab';
+            el.style.userSelect = '';
+        }
+    }, []);
+    const isAdminOrMaster = isSupervisor;
+    useEffect(() => {
+        const fetchTags = async () => {
+            if (!companyId)
+                return;
+            const { data } = await supabase
+                .from("crm_tags")
+                .select("id, name, color")
+                .eq("servidor_id", companyId)
+                .order("name");
+            if (data)
+                setAvailableTags(data);
+        };
+        fetchTags();
+    }, [companyId]);
+    const refreshLeadSchedule = useCallback(async (leadId) => {
+        const { data, error } = await supabase
+            .from("crm_lead_activities")
+            .select("*")
+            .eq("lead_id", leadId)
+            .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
+            .order("created_at", { ascending: false });
+        if (!error && data) {
+            setLeadActivities(prev => ({
+                ...prev,
+                [leadId]: data
+            }));
+        }
+    }, []);
+    const fetchLeadActivities = useCallback(async () => {
+        if (leads.length === 0)
+            return;
+        const leadIds = leads.map((l) => l.id);
+        const { data, error } = await supabase
+            .from("crm_lead_activities")
+            .select("*")
+            .in("lead_id", leadIds)
+            .in("type", ["activity", "meeting", "call", "email", "internal", "whatsapp"])
+            .order("created_at", { ascending: false });
+        if (!error && data) {
+            const activitiesByLead = {};
+            data.forEach((activity) => {
+                if (!activitiesByLead[activity.lead_id]) {
+                    activitiesByLead[activity.lead_id] = [];
+                }
+                activitiesByLead[activity.lead_id].push(activity);
+            });
+            setLeadActivities(activitiesByLead);
+        }
+    }, [leads]);
+    useEffect(() => {
+        fetchLeadActivities();
+    }, [fetchLeadActivities]);
+    useEffect(() => {
+        if (!companyId || !workspaceId)
+            return;
+        const channelName = `crm-kanban-activities:${companyId}:${workspaceId}`;
+        const channel = supabase.channel(channelName);
+        const handlePayload = (payload) => {
+            const leadId = payload.new?.lead_id || payload.old?.lead_id;
+            if (leadId) {
+                refreshLeadSchedule(leadId);
+            }
+            else if (payload.eventType === 'DELETE') {
+                // If DELETE doesn't provide lead_id, refresh all just to be safe (debauced if needed)
+                fetchLeadActivities();
+            }
+        };
+        channel
+            .on("postgres_changes", { event: "*", schema: "public", table: "crm_lead_activities" }, handlePayload)
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [companyId, workspaceId, refreshLeadSchedule, fetchLeadActivities]);
+    // Handle clock-based updates
+    useEffect(() => {
+        const updateNow = () => {
+            const current = new Date();
+            setNow(current);
+            // Find next schedule to set a timer
+            let nextTime = null;
+            Object.values(leadActivities).forEach(activities => {
+                const state = getLeadScheduleState(activities, current);
+                if (state.state === "scheduled" && state.scheduledAt) {
+                    const time = state.scheduledAt.getTime();
+                    if (nextTime === null || time < nextTime) {
+                        nextTime = time;
+                    }
+                }
+            });
+            if (timerRef.current)
+                clearTimeout(timerRef.current);
+            if (nextTime !== null) {
+                const delay = Math.max(0, nextTime - current.getTime() + 1000);
+                // Cap delay to avoid issues with extremely large numbers, 
+                // though usually we'd only care about things happening soon
+                if (delay < 2147483647) {
+                    timerRef.current = setTimeout(updateNow, delay);
+                }
+            }
+        };
+        updateNow();
+        const onFocus = () => updateNow();
+        window.addEventListener('focus', onFocus);
+        return () => {
+            if (timerRef.current)
+                clearTimeout(timerRef.current);
+            window.removeEventListener('focus', onFocus);
+        };
+    }, [leadActivities]);
+    useEffect(() => {
+        let isMounted = true;
+        const fetchSignatureStats = async () => {
+            if (leads.length === 0) {
+                if (isMounted)
+                    setSignatureStatsByLead({});
+                return;
+            }
+            const leadIds = leads.map((lead) => lead.id);
+            const { data: contracts, error: contractsError } = await supabase
+                .from("contracts")
+                .select("id, lead_id, created_at, signature_status")
+                .in("lead_id", leadIds)
+                .order("created_at", { ascending: false });
+            if (contractsError || !isMounted)
+                return;
+            const latestContractsByLead = new Map();
+            for (const contract of contracts || []) {
+                if (!contract.lead_id || latestContractsByLead.has(contract.lead_id))
+                    continue;
+                latestContractsByLead.set(contract.lead_id, contract);
+            }
+            const contractIds = Array.from(latestContractsByLead.values()).map((contract) => contract.id);
+            if (contractIds.length === 0) {
+                if (isMounted)
+                    setSignatureStatsByLead({});
+                return;
+            }
+            const { data: signers, error: signersError } = await supabase
+                .from("contract_signatures")
+                .select("id, contract_id, signer_role, signed_at, signer_name, signer_document")
+                .in("contract_id", contractIds);
+            if (signersError || !isMounted)
+                return;
+            const signersByContract = new Map();
+            for (const signer of signers || []) {
+                const current = signersByContract.get(signer.contract_id) || [];
+                current.push(signer);
+                signersByContract.set(signer.contract_id, current);
+            }
+            const nextStats = {};
+            for (const contract of latestContractsByLead.values()) {
+                const { signed, total, allSigned } = getLeadContractSignatureStats(signersByContract.get(contract.id) || []);
+                // Inclui mesmo contratos emitidos sem signatários cadastrados — mostra "Emitido"
+                nextStats[contract.lead_id] = {
+                    signed,
+                    total,
+                    approved: (total > 0 && allSigned) || contract.signature_status === "signed",
+                };
+            }
+            if (isMounted) {
+                setSignatureStatsByLead(nextStats);
+            }
+        };
+        fetchSignatureStats();
+        const channel = supabase
+            .channel("crm-contract-signature-stats")
+            .on("postgres_changes", { event: "*", schema: "public", table: "contract_signatures" }, fetchSignatureStats)
+            .on("postgres_changes", { event: "*", schema: "public", table: "contracts" }, fetchSignatureStats)
+            .subscribe();
+        return () => {
+            isMounted = false;
+            supabase.removeChannel(channel);
+        };
+    }, [leads]);
+    // Fetch avatars for all lead creators
+    useEffect(() => {
+        const fetchCreatorAvatars = async () => {
+            if (leads.length === 0 || teamMembers.length > 0)
+                return;
+            const userIds = [...new Set(leads.map(l => l.created_by_user_id).filter(Boolean))];
+            if (userIds.length === 0)
+                return;
+            const { data } = await supabase
+                .from("profiles")
+                .select("user_id, name, avatar_url")
+                .in("user_id", userIds);
+            if (data)
+                setTeamMembers(data);
+        };
+        fetchCreatorAvatars();
+    }, [leads, teamMembers.length]);
+    const toggleTag = (tagName) => {
+        setSelectedTags((prev) => prev.includes(tagName) ? prev.filter((t) => t !== tagName) : [...prev, tagName]);
+    };
+    useEffect(() => {
+        if (!workspaceId)
+            return;
+        const fetchTeam = async () => {
+            const { data, error } = await supabase.rpc("get_workspace_team_members", {
+                p_workspace_id: workspaceId
+            });
+            if (!error && data) {
+                setTeamMembers(data);
+            }
+            else {
+                console.error("Error fetching workspace team members:", error);
+            }
+        };
+        fetchTeam();
+    }, [workspaceId]);
+    const copyFormLink = async () => {
+        let cId = companyId;
+        if (!cId) {
+            const { data } = await supabase
+                .from("companies")
+                .select("id")
+                .is("servidor_id", null)
+                .in("status", ["active", "teste"])
+                .limit(1)
+                .maybeSingle();
+            cId = data?.id || null;
+        }
+        if (!cId) {
+            toast.error("Nenhuma empresa encontrada");
+            return;
+        }
+        const url = `${window.location.origin}/captura/${cId}`;
+        navigator.clipboard.writeText(url);
+        setLinkCopied(true);
+        toast.success("Link do formulário copiado!");
+        setTimeout(() => setLinkCopied(false), 2000);
+    };
+    const baseFiltered = leads.filter((l) => {
+        if (selectedUserId !== "all" && l.created_by_user_id !== selectedUserId)
+            return false;
+        if (selectedTags.length > 0) {
+            const leadTags = l.tags || [];
+            if (!selectedTags.some((t) => leadTags.includes(t)))
+                return false;
+        }
+        const term = localSearch || searchTerm;
+        if (!term)
+            return true;
+        const s = term.toLowerCase();
+        return (l.company_name.toLowerCase().includes(s) ||
+            l.contact_name?.toLowerCase().includes(s) ||
+            l.phone?.includes(s) ||
+            l.email?.toLowerCase().includes(s) ||
+            l.source?.toLowerCase().includes(s));
+    });
+    const filteredLeads = applyFilters(baseFiltered, advancedFilters);
+    // Totais recalculados com base nos cards que passam no filtro
+    const filteredTotalPS = useMemo(() => filteredLeads.reduce((acc, l) => acc + (l.value_ps || 0), 0), [filteredLeads]);
+    const filteredTotalMRR = useMemo(() => filteredLeads.reduce((acc, l) => acc + (l.value_mrr || 0), 0), [filteredLeads]);
+    // Total por etapa (respeitando busca/tags/responsável mas ignorando filtro de status)
+    const stageTotalMap = useMemo(() => {
+        const m = {};
+        for (const l of baseFiltered) {
+            if (!l.stage)
+                continue;
+            m[l.stage] = (m[l.stage] || 0) + 1;
+        }
+        return m;
+    }, [baseFiltered]);
+    const handleDrop = async (e, targetStage) => {
+        e.preventDefault();
+        if (!draggedLead || draggedLead.stage === targetStage) {
+            setDraggedLead(null);
+            setDragOverStage(null);
+            return;
+        }
+        await moveToStage(draggedLead.id, targetStage);
+        setDraggedLead(null);
+        setDragOverStage(null);
+    };
+    const fetchTrashLeads = useCallback(async () => {
+        if (!companyId)
+            return;
+        let q = supabase
+            .from("crm_leads")
+            .select("*")
+            .eq("lead_status", "trash")
+            .order("status_changed_at", { ascending: false, nullsFirst: false });
+        if (workspaceId)
+            q = q.eq("workspace_id", workspaceId);
+        const { data } = await q;
+        setTrashLeads(data || []);
+    }, [companyId, workspaceId]);
+    useEffect(() => {
+        if (statusFilter === "trash")
+            fetchTrashLeads();
+    }, [statusFilter, fetchTrashLeads]);
+    const handleQuickAction = async (zoneId) => {
+        if (!draggedLead)
+            return;
+        const lead = draggedLead;
+        setDraggedLead(null);
+        switch (zoneId) {
+            case "trash": {
+                if (!window.confirm(`Mover "${lead.contact_name || lead.company_name}" para a lixeira?`))
+                    return;
+                await updateLead(lead.id, {
+                    lead_status: "trash",
+                    status_changed_at: new Date().toISOString(),
+                });
+                toast.success("Card movido pra lixeira", {
+                    action: {
+                        label: "Desfazer",
+                        onClick: async () => {
+                            await updateLead(lead.id, { lead_status: "open", status_changed_at: new Date().toISOString() });
+                            toast.success("Restaurado");
+                        },
+                    },
+                });
+                break;
+            }
+            case "lost": {
+                setPendingLead(lead);
+                setLostReasonOpen(true);
+                break;
+            }
+            case "won": {
+                try {
+                    await markAsWonAndTransfer(lead.id);
+                    toast.success(`"${lead.contact_name || lead.company_name}" marcado como ganho 🎉`);
+                }
+                catch (err) {
+                    toast.error(err?.message || "Erro ao marcar como ganho");
+                }
+                break;
+            }
+            case "transfer": {
+                setPendingLead(lead);
+                setTransferOpen(true);
+                break;
+            }
+        }
+    };
+    const counters = useMemo(() => ({
+        open: leads.filter((l) => !l.lead_status || l.lead_status === "open").length,
+        won: leads.filter((l) => l.lead_status === "won").length,
+        lost: leads.filter((l) => l.lead_status === "lost").length,
+        trash: trashLeads.length,
+    }), [leads, trashLeads]);
+    const openNew = () => { setSelectedLead(null); setIsNew(true); setDialogOpen(true); };
+    const openEdit = (lead) => { setSelectedLead(lead); setIsNew(false); setDialogOpen(true); };
+    const openDetail = (lead) => { setDetailLead(lead); };
+    const handleSave = async (data) => {
+        if (isNew)
+            await createLead(data);
+        else if (selectedLead)
+            await updateLead(selectedLead.id, data);
+    };
+    if (loading || colsLoading) {
+        return (<div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+      </div>);
+    }
+    if (detailLead) {
+        const currentLead = leads.find((l) => l.id === detailLead.id) || detailLead;
+        return (<div className="flex flex-col flex-1 min-h-0 w-full overflow-hidden">
+        <CrmLeadDetailView lead={currentLead} onBack={() => setDetailLead(null)} onUpdate={updateLead} onMoveStage={moveToStage} onDelete={async (id) => { await deleteLead(id); setDetailLead(null); return true; }} dynamicStages={hasDynamicColumns ? dynamicStages : undefined} stagesLoading={colsLoading}/>
+      </div>);
+    }
+    return (<div className={cn("flex flex-col h-full overflow-hidden bg-muted/30", isMobile && "pb-[env(safe-area-inset-bottom)]")} style={isMobile ? { paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : undefined}>
+      {/* KPI Cards */}
+      <div className={cn("px-3 py-1 gap-2 shrink-0", isMobile ? "flex flex-wrap items-center" : "flex items-center")}>
+        <div className={cn("flex items-center gap-1.5", isMobile ? "w-full" : "flex-1")}>
+          <div className="flex items-center gap-3 bg-card rounded-lg border border-border/50 px-3 py-1 shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Oport.</span>
+              <span className="text-sm font-bold text-foreground">{stageStats.reduce((acc, s) => acc + s.count, 0)}</span>
+            </div>
+            <div className="w-px h-4 bg-border/50"/>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">P&S</span>
+              <span className="text-sm font-bold text-foreground">{formatCurrency(filteredTotalPS)}</span>
+            </div>
+            <div className="w-px h-4 bg-border/50"/>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">MRR</span>
+              <span className="text-sm font-bold text-primary">{formatCurrency(filteredTotalMRR)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className={cn("flex items-center gap-1.5", isMobile ? "flex-wrap w-full justify-start" : "shrink-0")}>
+          {searchOpen && (<Input autoFocus type="search" placeholder="Buscar lead..." value={localSearch} onChange={(e) => setLocalSearch(e.target.value)} className="h-8 w-44 text-xs border-border/50 bg-card rounded-lg shadow-sm" onBlur={() => { if (!localSearch)
+            setSearchOpen(false); }}/>)}
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setGlobalSearchOpen(true)} title="Pesquisar">
+            <Search className="h-3.5 w-3.5"/>
+          </Button>
+          {(isAdminOrMaster || teamMembers.length > 0) && teamMembers.length > 0 && (<Select value={selectedUserId} onValueChange={setSelectedUserId}>
+              <SelectTrigger className="h-8 w-36 text-xs border-border/50 bg-card rounded-lg shadow-sm">
+                <Users className="h-3 w-3 mr-1 shrink-0"/>
+                <SelectValue placeholder="Equipe"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Todos</SelectItem>
+                {teamMembers.map((m) => (<SelectItem key={m.user_id} value={m.user_id} className="text-xs">{m.name}</SelectItem>))}
+              </SelectContent>
+            </Select>)}
+          {availableTags.length > 0 && (<Popover>
+              <PopoverTrigger asChild>
+                <Button size="icon" variant={selectedTags.length > 0 ? "default" : "outline"} className="h-8 w-8 relative rounded-lg shadow-sm border-border/50">
+                  <Filter className="h-3.5 w-3.5"/>
+                  {selectedTags.length > 0 && (<span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
+                      {selectedTags.length}
+                    </span>)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2 rounded-xl" align="end">
+                <div className="text-[11px] font-medium text-muted-foreground mb-1.5 px-1">Filtrar por tag</div>
+                {selectedTags.length > 0 && (<Button variant="ghost" size="sm" className="w-full h-6 text-[11px] mb-1" onClick={() => setSelectedTags([])}>
+                    Limpar filtros
+                  </Button>)}
+                <div className="space-y-0.5 max-h-48 overflow-y-auto">
+                  {availableTags.map((tag) => (<button key={tag.id} onClick={() => toggleTag(tag.name)} className={cn("flex items-center gap-2 w-full rounded-lg px-2 py-1.5 text-[11px] hover:bg-muted transition-colors", selectedTags.includes(tag.name) && "bg-muted")}>
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }}/>
+                      <span className="truncate flex-1 text-left">{tag.name}</span>
+                      {selectedTags.includes(tag.name) && <Check className="h-3 w-3 text-primary shrink-0"/>}
+                    </button>))}
+                </div>
+              </PopoverContent>
+            </Popover>)}
+          <Button size="icon" variant={activeFilterCount > 0 ? "default" : "outline"} className="h-8 w-8 relative rounded-lg shadow-sm border-border/50" onClick={() => setFilterPanelOpen(true)} title="Filtrar cards">
+            <Filter className="h-3.5 w-3.5"/>
+            {activeFilterCount > 0 && (<span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
+                {activeFilterCount}
+              </span>)}
+          </Button>
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => setFormLinkOpen(true)}>
+            <Tag className="h-3.5 w-3.5"/>
+          </Button>
+          <Button size="icon" variant="outline" className="h-8 w-8 rounded-lg shadow-sm border-border/50" onClick={() => navigate("/contato")}>
+            <Link2 className="h-3.5 w-3.5"/>
+          </Button>
+          <Button size="sm" onClick={openNew} className="h-8 gap-1.5 text-xs px-4 rounded-[10px] shadow-sm bg-primary hover:bg-primary/90">
+            <Plus className="h-3.5 w-3.5"/> Novo Card
+          </Button>
+        </div>
+      </div>
+
+
+      {/* Kanban Columns (única visão — cards permanecem nas colunas de origem) */}
+      <div className="flex-1 min-h-0 flex flex-col w-full max-w-full">
+
+        {/* Mobile stage chip bar */}
+        {isMobile && (<div className="flex gap-1.5 overflow-x-auto px-2 py-1.5 shrink-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none' }}>
+            {stageStats.map((s) => {
+                const isActive = activeMobileStageId === s.id;
+                const dynCol = kanbanCols.find((c) => c.id === s.id);
+                return (<button key={s.id} type="button" onClick={() => scrollToMobileStage(s.id)} className={cn("shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold border transition-colors", isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card text-foreground border-border/60")} style={isActive && dynCol?.color ? { backgroundColor: dynCol.color, borderColor: dynCol.color, color: "#fff" } : undefined}>
+                  {s.title}
+                </button>);
+            })}
+          </div>)}
+
+        <div ref={pipelineRef} style={{ scrollBehavior: 'smooth', scrollbarWidth: 'thin' }} className={cn("flex flex-1 min-h-0 items-stretch pb-0 w-full max-w-full overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-[6px] [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gradient-to-r [&::-webkit-scrollbar-thumb]:from-[hsl(var(--primary))] [&::-webkit-scrollbar-thumb]:to-[hsl(263,87%,60%)]", isMobile
+            ? "gap-0 px-0 snap-x snap-mandatory"
+            : "gap-2 pl-2 pr-6 cursor-grab")} onMouseDown={isMobile ? undefined : handlePipelineMouseDown} onMouseMove={isMobile ? undefined : handlePipelineMouseMove} onMouseUp={isMobile ? undefined : handlePipelineMouseUp} onMouseLeave={isMobile ? undefined : handlePipelineMouseUp}>
+        {stageStats.map((stage, stageIdx) => {
+            const Icon = stageIcons[stage.id] || Clock;
+            const showTransferredWon = advancedFilters.status.includes("ganho");
+            const firstStageId = stageStats[0]?.id;
+            const noStatusFilter = advancedFilters.status.length === 0;
+            const stageLeads = filteredLeads.filter((l) => {
+                const isTransferredWon = !!workspaceId &&
+                    !!l.origin_workspace_id &&
+                    l.workspace_id !== workspaceId &&
+                    l.origin_workspace_id === workspaceId;
+                if (isTransferredWon) {
+                    if (!showTransferredWon)
+                        return false;
+                    // If origin_stage matches this column, show here.
+                    // If origin_stage is null/unknown, fall back to the FIRST column.
+                    if (l.origin_stage)
+                        return l.origin_stage === stage.id;
+                    return stage.id === firstStageId;
+                }
+                if (l.stage !== stage.id)
+                    return false;
+                // Default (no status filter): only show open cards to avoid polluting the board.
+                if (noStatusFilter) {
+                    const st = getCardStatus(l);
+                    return st === "aberto";
+                }
+                return true;
+            });
+            const colors = stageColors[stage.id] || { bg: "bg-muted/30", text: "text-foreground", icon: "bg-primary", border: "border-border" };
+            const dynCol = kanbanCols.find(c => c.id === stage.id);
+            const rawSla = dynCol?.sla_days ?? (stage.daysLimit ? parseInt(stage.daysLimit, 10) : 0);
+            const slaDays = Math.max(0, Math.round(Number(rawSla) || 0));
+            return (<div key={stage.id} ref={(el) => { stageColumnRefs.current[stage.id] = el; }} className={cn("rounded-xl flex flex-col border transition-all duration-200", isMobile
+                    ? "shrink-0 basis-full min-w-full snap-center px-1"
+                    : "flex-shrink-0 w-[220px]", dynCol ? "border-border/50" : `${colors.border} ${colors.bg}`, !dynCol && !colors.bg && "bg-muted/20", dragOverStage === stage.id && "ring-2 ring-primary/60 scale-[1.01]")} style={dynCol?.color ? {
+                    backgroundColor: `color-mix(in srgb, ${dynCol.color} 6%, transparent)`,
+                    borderTopColor: dynCol.color,
+                    borderTopWidth: '2px',
+                } : undefined} onDragOver={isMobile ? undefined : (e) => { e.preventDefault(); setDragOverStage(stage.id); }} onDragLeave={isMobile ? undefined : () => setDragOverStage(null)} onDrop={isMobile ? undefined : (e) => handleDrop(e, stage.id)}>
+              {/* Column Header */}
+              <div className="px-2.5 py-2 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className={cn("p-1 rounded-md", dynCol ? "" : colors.icon)} style={dynCol ? { backgroundColor: dynCol.color } : undefined}>
+                      <Icon className="h-3 w-3 text-white"/>
+                    </div>
+                    <span className="font-semibold text-[11px] text-foreground">{stage.title}</span>
+                    <span className={cn("text-[10px] font-bold rounded-full px-2 py-0.5 bg-card border border-border/50", dynCol ? "text-foreground" : colors.text)} title="Cards filtrados / total na etapa">
+                      {stageTotalMap[stage.id] || 0} cards
+                    </span>
+                  </div>
+                  {stage.daysLimit && (<span className="text-[9px] text-muted-foreground/60 font-medium">{stage.daysLimit}</span>)}
+                </div>
+                <div className="flex items-center gap-1.5 text-[9px] mt-1">
+                  <span className="text-muted-foreground">P&S <span className="font-semibold text-foreground">{formatCurrency(stage.totalPS)}</span></span>
+                  <span className="text-muted-foreground/30">·</span>
+                  <span className="text-muted-foreground">MRR <span className="font-semibold text-primary">{formatCurrency(stage.totalMRR)}</span></span>
+                </div>
+              </div>
+
+              {/* Cards */}
+              <div className="flex-1 px-1.5 pb-1.5 space-y-1.5 overflow-y-auto">
+                {filterApplying ? (<div className="space-y-1.5">
+                    {Array.from({ length: Math.max(1, Math.min(4, stageLeads.length || 2)) }).map((_, i) => (<div key={i} className="h-[86px] rounded-xl border border-border/40 bg-muted/40 dark:bg-muted/20 animate-pulse"/>))}
+                  </div>) : stageLeads.length === 0 ? (<div className="flex flex-col items-center justify-center py-8 text-muted-foreground/30">
+                    <Icon className="h-8 w-8 mb-2"/>
+                    <p className="text-[10px] font-medium">Etapa vazia</p>
+                  </div>) : null}
+                {!filterApplying && stageLeads.map((lead) => {
+                    const overdue = dynCol
+                        ? isLeadOverdueDynamic(lead, slaDays)
+                        : isLeadOverdue(lead, stage.id);
+                    const stageEnteredAt = lead.stage_entered_at
+                        ? new Date(lead.stage_entered_at)
+                        : new Date(lead.created_at);
+                    const days = Math.max(0, Math.floor((Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24)));
+                    const overdueByDays = slaDays > 0
+                        ? Math.max(0, Math.round(days - slaDays))
+                        : 0;
+                    const scheduleState = getLeadScheduleState(leadActivities[lead.id] || [], now);
+                    const hasOverdue = scheduleState.state === "overdue";
+                    const signatureStats = signatureStatsByLead[lead.id];
+                    const isTransferredWon = !!workspaceId &&
+                        !!lead.origin_workspace_id &&
+                        lead.workspace_id !== workspaceId &&
+                        lead.origin_workspace_id === workspaceId;
+                    // Priority: 1) won, 2) lost, 3) trash, 4) overdue activity, 5) SLA exceeded (historical), 6) no schedule, 7) normal
+                    const cardStatus = getCardStatus(lead);
+                    const isWon = cardStatus === "ganho";
+                    const isLost = cardStatus === "perdido";
+                    const isTrash = cardStatus === "lixeira";
+                    const cardStyle = isWon
+                        ? "bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-500/70 dark:border-emerald-600/60 ring-1 ring-emerald-500/30"
+                        : isLost
+                            ? "bg-red-50/80 dark:bg-red-950/40 border-red-400/70 dark:border-red-700/60 ring-1 ring-red-400/30"
+                            : isTrash
+                                ? "bg-slate-100/80 dark:bg-slate-900/40 border-slate-400/70 dark:border-slate-600/60 ring-1 ring-slate-400/30 opacity-80"
+                                : hasOverdue
+                                    ? "bg-red-50/90 dark:bg-red-950/40 border-red-500 dark:border-red-700 shadow-[0_0_15px_-3px_rgba(239,68,68,0.2)]"
+                                    : scheduleState.state === "none"
+                                        ? "bg-[#FFFBEB] dark:bg-amber-950/20 border-amber-400/80 dark:border-amber-700/60"
+                                        : "bg-card/95 dark:bg-[rgba(255,255,255,0.03)] border-border/40 dark:border-[rgba(255,255,255,0.07)]";
+                    const isNaturalState = !isWon && !isLost && !isTrash && scheduleState.state === "scheduled";
+                    const dragDisabled = isTransferredWon || isTrash || isMobile;
+                    return (<div key={lead.id} draggable={!dragDisabled} onDragStart={() => { if (!dragDisabled)
+                        setDraggedLead(lead); }} onClick={() => openDetail(lead)} title={isTransferredWon ? "Ganho — já transferido para Cadastro (somente leitura neste board)" : isTrash ? "Card na lixeira (somente leitura)" : undefined} className={cn("kanban-card rounded-xl border transition-all duration-200 group relative overflow-hidden", dragDisabled ? "cursor-pointer" : "cursor-grab active:cursor-grabbing active:scale-[0.98]", draggedLead?.id === lead.id && "opacity-40 scale-95", cardStyle, isNaturalState
+                            ? "hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 dark:hover:border-primary/30 hover:brightness-105 dark:hover:brightness-110"
+                            : "hover:-translate-y-[2px] hover:shadow-md")} style={{
+                            boxShadow: draggedLead?.id === lead.id ? undefined
+                                : isNaturalState ? '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.02)' : '0 2px 8px rgba(0,0,0,0.04)',
+                        }}>
+                      {/* Top accent bar - uses tenant primary color */}
+                      <div className={cn("absolute top-0 left-0 right-0 h-[2.5px] rounded-t-xl", hasOverdue ? "bg-red-600" : scheduleState.state === "none" ? "bg-amber-500" : "")} style={isNaturalState ? {
+                            background: `linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))`,
+                        } : undefined}/>
+
+                      {/* Selo de status Ganho/Perdido/Lixeira */}
+                      {(isWon || isLost || isTrash) && (<span className={cn("absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide border shadow-sm", isWon
+                                ? "bg-emerald-500 text-white border-emerald-600"
+                                : isLost
+                                    ? "bg-red-500 text-white border-red-600"
+                                    : "bg-slate-500 text-white border-slate-600")}>
+                          {isWon ? (isTransferredWon ? "Ganho — em Cadastro" : "Ganho") : isLost ? "Perdido" : "Lixeira"}
+                        </span>)}
+
+
+
+                      {/* Faixa de assinaturas — visível por fora do card, antes de abrir */}
+                      {signatureStats && (<div className={cn("flex items-center justify-between gap-1.5 px-2.5 py-1 text-[10px] font-bold border-b", signatureStats.approved
+                                ? "bg-emerald-500 text-white border-emerald-600"
+                                : signatureStats.total === 0
+                                    ? "bg-slate-600 text-white border-slate-700"
+                                    : signatureStats.signed > 0
+                                        ? "bg-amber-500 text-white border-amber-600"
+                                        : "bg-slate-700 text-white border-slate-800")} title={signatureStats.approved
+                                ? "Contrato totalmente assinado"
+                                : signatureStats.total === 0
+                                    ? "Contrato emitido — aguardando signatários"
+                                    : `${signatureStats.signed}/${signatureStats.total} assinaturas coletadas`}>
+                          <span className="flex items-center gap-1.5">
+                            {signatureStats.approved ? (<CheckCircle className="h-3 w-3"/>) : (<FileSignature className="h-3 w-3"/>)}
+                            <span className="uppercase tracking-wide">
+                              {signatureStats.approved
+                                ? "Contrato assinado"
+                                : signatureStats.total === 0
+                                    ? "Contrato emitido"
+                                    : "Aguardando assinatura"}
+                            </span>
+                          </span>
+                          <span className="font-extrabold">
+                            {signatureStats.total === 0
+                                ? "0/0"
+                                : `${signatureStats.signed}/${signatureStats.total}`}
+                          </span>
+                        </div>)}
+
+                      <div className="p-2.5 pt-3">
+
+                        {/* Lead name + status icons */}
+                        <div className="flex items-start justify-between mb-1">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1">
+                              <p className={cn("text-[11px] truncate", isNaturalState ? "font-bold text-foreground tracking-tight" : "font-semibold text-foreground")}>
+                                {lead.contact_name || lead.source}
+                              </p>
+                              {/* Status badges removed from here, now displayed in a unified section below */}
+
+                            </div>
+                            {/* Company name */}
+                            <p className="text-[10px] text-muted-foreground truncate mt-0.5">{lead.company_name}</p>
+                            {isLost && (<Badge variant="destructive" className="text-[8px] h-3.5 px-1 mt-0.5 gap-0.5 font-semibold">
+                                ✕ Perdido
+                              </Badge>)}
+                          </div>
+                          <DropdownMenu>
+
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className={cn("h-5 w-5 rounded-md transition-opacity", isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+                                <MoreVertical className="h-3 w-3"/>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openEdit(lead); }}>
+                                <Edit className="h-3.5 w-3.5 mr-2"/> Editar
+                              </DropdownMenuItem>
+                              {isMobile && !dragDisabled && stageStats.length > 1 && (<>
+                                  <div className="px-2 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    Mover para etapa
+                                  </div>
+                                  {stageStats
+                                .filter((s) => s.id !== lead.stage)
+                                .map((s) => (<DropdownMenuItem key={s.id} onClick={(e) => { e.stopPropagation(); moveToStage(lead.id, s.id); }}>
+                                        <RefreshCw className="h-3.5 w-3.5 mr-2"/> {s.title}
+                                      </DropdownMenuItem>))}
+                                </>)}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        {/* Values */}
+                        <div className={cn("flex items-center gap-1.5 text-[10px] py-1 px-1.5 rounded-md mt-1", isNaturalState ? "bg-muted/50 dark:bg-muted/20" : "")}>
+                          <span className="text-muted-foreground">P&S <span className="font-bold text-foreground">{formatCurrency(lead.value_ps)}</span></span>
+                          <span className="text-muted-foreground/30">·</span>
+                          <span className="text-muted-foreground">MRR <span className="font-bold text-primary">{formatCurrency(lead.value_mrr)}</span></span>
+                        </div>
+
+                        {/* Contact info */}
+                        {(lead.phone || lead.email) && isNaturalState && (<div className="flex items-center gap-1 mt-1.5 text-[9px] text-muted-foreground/70">
+                            {lead.phone ? (<>
+                                <Phone className="h-2.5 w-2.5"/>
+                                <span className="truncate">{lead.phone}</span>
+                              </>) : lead.email ? (<>
+                                <MessageSquare className="h-2.5 w-2.5"/>
+                                <span className="truncate">{lead.email}</span>
+                              </>) : null}
+                          </div>)}
+
+                        {signatureStats && (<div className="mt-1.5 flex flex-wrap gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary" className={cn("text-[9px] gap-0.5 px-1.5 py-0 font-semibold", signatureStats.approved
+                                ? "bg-emerald-500 text-white hover:bg-emerald-500"
+                                : signatureStats.total === 0
+                                    ? "bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/30"
+                                    : signatureStats.signed > 0
+                                        ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30"
+                                        : "bg-muted text-muted-foreground border border-border/60")}>
+                                  {signatureStats.approved ? (<CheckCircle className="h-2.5 w-2.5"/>) : (<FileSignature className="h-2.5 w-2.5"/>)}
+                                  {signatureStats.total === 0
+                                ? "Emitido"
+                                : `${signatureStats.signed}/${signatureStats.total}`}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px]">
+                                {signatureStats.approved
+                                ? "Contrato totalmente assinado"
+                                : signatureStats.total === 0
+                                    ? "Contrato emitido — aguardando signatários"
+                                    : `${signatureStats.signed} de ${signatureStats.total} assinatura${signatureStats.total > 1 ? "s" : ""} concluída${signatureStats.signed === 1 ? "" : "s"}`}
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>)}
+
+                        {/* Won / Devolvido badges */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {lead.lead_status === "won" && (<span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0" style={{ backgroundColor: '#D1FAE5', color: '#059669' }}>
+                              ✅ Ganho
+                            </span>)}
+                          {lead.tags?.includes("Pendente de Correção") && (<span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0" style={{ backgroundColor: '#FED7AA', color: '#C2410C' }}>
+                              ⚠️ Correção
+                            </span>)}
+                          {lead.tags?.includes("Devolvido") && !lead.tags?.includes("Pendente de Correção") && (<span className="inline-flex items-center gap-0.5 text-[9px] font-semibold rounded-full px-1.5 py-0" style={{ backgroundColor: '#FEF3C7', color: '#D97706' }}>
+                              🔄 Devolvido
+                            </span>)}
+                        </div>
+
+                        {/* Scheduling Status Badge */}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {hasOverdue && (<Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-red-100 dark:bg-red-950/60 border border-red-500/50 dark:border-red-700/60 shrink-0 cursor-help">
+                                  <CalendarClock className="h-3.5 w-3.5 text-red-600 dark:text-red-400"/>
+                                  <span className="text-[10px] font-bold text-red-700 dark:text-red-300 uppercase">
+                                    Agendamento atrasado
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px] bg-red-600 text-white border-none shadow-lg">
+                                {scheduleState.scheduledAt ?
+                                `Atrasado: ${new Intl.DateTimeFormat("pt-BR", {
+                                    day: "2-digit", month: "2-digit", year: "numeric",
+                                    hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo"
+                                }).format(scheduleState.scheduledAt)}` :
+                                "Agendamento atrasado"}
+                              </TooltipContent>
+                            </Tooltip>)}
+                          {scheduleState.state === "scheduled" && scheduleState.scheduledAt && !isWon && !isLost && !isTrash && (<div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 shadow-sm">
+                              <Clock className="h-3 w-3 text-slate-500"/>
+                              <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                Agendado: {new Intl.DateTimeFormat("pt-BR", {
+                                day: "2-digit", month: "2-digit",
+                                hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo"
+                            }).format(scheduleState.scheduledAt)}
+                              </span>
+                            </div>)}
+                          {scheduleState.state === "none" && !isWon && !isLost && !isTrash && (<Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 shrink-0 cursor-help shadow-sm">
+                                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500"/>
+                                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase">
+                                    Sem agendamento
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-[10px] font-medium">Sem agendamento</TooltipContent>
+                            </Tooltip>)}
+                        </div>
+
+
+                        {/* Footer */}
+                        <div className={cn("flex items-center justify-between mt-2 pt-2", isNaturalState ? "border-t border-border/10" : "border-t border-border/15")}>
+                          <div className="flex items-center gap-1">
+                            {lead.created_by_name && (() => {
+                            const memberAvatar = teamMembers.find(m => m.user_id === lead.created_by_user_id)?.avatar_url;
+                            return (<Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>
+                                      <UserAvatar userId={lead.created_by_user_id} name={lead.created_by_name} avatarUrl={memberAvatar} size={20} className={cn(isNaturalState ? "ring-1 ring-primary/20" : "ring-1 ring-primary/15")}/>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom" className="text-[10px] font-medium">{lead.created_by_name}</TooltipContent>
+                                </Tooltip>);
+                        })()}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="text-[9px] text-muted-foreground/50 cursor-help">{stageEnteredAt.toLocaleDateString("pt-BR")}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-[10px] space-y-1">
+                                <div><strong>Entrou neste estágio:</strong> {stageEnteredAt.toLocaleString("pt-BR")}</div>
+                                <div><strong>Lead criado em:</strong> {new Date(lead.created_at).toLocaleString("pt-BR")}</div>
+                                <div><strong>SLA da coluna:</strong> {slaDays > 0 ? `${slaDays} dia${slaDays > 1 ? "s" : ""}` : "sem SLA"}</div>
+                                <div><strong>Há {days} dia{days !== 1 ? "s" : ""} neste estágio</strong></div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                          <span className={cn("text-[9px] font-bold rounded-full px-1.5 py-0", overdue ? "text-destructive bg-destructive/10"
+                            : days > 3 ? "text-amber-600 bg-amber-50 dark:bg-amber-950/30"
+                                : isNaturalState ? "text-muted-foreground/60"
+                                    : "text-muted-foreground/50")}>
+                            {overdue && overdueByDays > 0
+                            ? `+${overdueByDays}d atraso`
+                            : days === 0
+                                ? "Hoje"
+                                : days === 1
+                                    ? "Ontem"
+                                    : `${days} dias`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>);
+                })}
+              </div>
+            </div>);
+        })}
+        </div>
+      </div>
+
+
+      {detailLead && (<CrmLeadDetailView lead={detailLead} onBack={() => setDetailLead(null)} onUpdate={updateLead} onMoveStage={moveToStage} onDelete={deleteLead} isAdminPipeline={false} dynamicStages={dynamicStages} stagesLoading={colsLoading} onScheduleChanged={refreshLeadSchedule}/>)}
+
+      <KanbanQuickActionZones visible={!!draggedLead} currentStatus={draggedLead?.lead_status} onAction={handleQuickAction}/>
+
+      <LostReasonDialog open={lostReasonOpen} lead={pendingLead} onOpenChange={setLostReasonOpen} onConfirm={async (reason) => {
+            if (pendingLead) {
+                await updateLead(pendingLead.id, {
+                    lead_status: "lost",
+                    lost_reason: reason,
+                    status_changed_at: new Date().toISOString(),
+                });
+                toast.success("Marcado como perdido");
+            }
+            setLostReasonOpen(false);
+            setPendingLead(null);
+        }}/>
+
+      <TransferWorkspaceDialog open={transferOpen} lead={pendingLead} currentWorkspaceId={workspaceId} onOpenChange={setTransferOpen} onTransfer={async (newWorkspaceId) => {
+            if (pendingLead) {
+                await updateLead(pendingLead.id, { workspace_id: newWorkspaceId });
+                toast.success("Card transferido");
+            }
+            setTransferOpen(false);
+            setPendingLead(null);
+        }}/>
+
+
+      <CrmLeadDialog lead={selectedLead} open={dialogOpen} onOpenChange={setDialogOpen} onSave={handleSave} onDelete={deleteLead} isNew={isNew} dynamicStages={dynamicStages} stagesLoading={colsLoading}/>
+      <FormLinkDialog open={formLinkOpen} onOpenChange={setFormLinkOpen}/>
+      <CrmSearchDialog open={globalSearchOpen} onOpenChange={setGlobalSearchOpen} onSelectLead={(lead) => openDetail(lead)}/>
+      <FilterPanel open={filterPanelOpen} onOpenChange={setFilterPanelOpen} value={advancedFilters} onApply={setAdvancedFilters} responsaveis={teamMembers.map((m) => ({ user_id: m.user_id, name: m.name }))} leads={leads}/>
+    </div>);
+}

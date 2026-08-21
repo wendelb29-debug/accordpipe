@@ -1,85 +1,109 @@
-import { ActivityItem } from "@/components/atendimento/LeadAtividadesTab";
 
 export type LeadScheduleState = "none" | "scheduled" | "overdue";
 
-export interface LeadScheduleResult {
-  state: LeadScheduleState;
-  nextSchedule: ActivityItem | null;
-  overdueCount: number;
+export interface ScheduleActivity {
+  id: string;
+  lead_id: string;
+  type: string;
+  status?: string | null;
+  metadata?: Record<string, any> | null;
+  completed_at?: string | null;
+  no_show_at?: string | null;
+  cancelled_at?: string | null; // Adicionado para suporte futuro
 }
 
-const COMPLETED_STATUSES = ["completed", "concluida", "done", "realizado", "concluído", "no_show"];
-const CANCELLED_STATUSES = ["cancelled", "canceled", "cancelado"];
+export interface LeadScheduleResult {
+  state: LeadScheduleState;
+  nextSchedule: ScheduleActivity | null;
+  overdueCount: number;
+  scheduledAt: Date | null;
+}
 
-export function getLeadScheduleState(activities: ActivityItem[], now: Date = new Date()): LeadScheduleResult {
+const COMPLETED_STATUSES = [
+  "completed", 
+  "concluida", 
+  "concluído", 
+  "done", 
+  "realizado", 
+  "no_show",
+  "cancelled",
+  "canceled",
+  "cancelado"
+];
+
+const SCHEDULED_TYPES = ["activity", "meeting", "call", "email", "internal", "whatsapp"];
+
+export function getLeadScheduleState(activities: ScheduleActivity[], now: Date = new Date()): LeadScheduleResult {
   if (!activities || activities.length === 0) {
-    return { state: "none", nextSchedule: null, overdueCount: 0 };
+    return { state: "none", nextSchedule: null, overdueCount: 0, scheduledAt: null };
   }
+
+  const normalize = (s: any) => String(s || "").toLowerCase().trim();
 
   // Filter for valid open schedules only
   const openSchedules = activities.filter(activity => {
-    // Only activities with specific types are considered "scheduled"
-    const scheduledTypes = ["activity", "meeting", "call", "email", "internal", "whatsapp"];
-    if (!scheduledTypes.includes(activity.type)) return false;
+    // 1. Check type
+    if (!SCHEDULED_TYPES.includes(activity.type)) return false;
 
+    // 2. Check metadata
     const meta = activity.metadata || {};
-    const status = (activity.status || meta.activity_status || "").toLowerCase();
-    
-    // Check if it's explicitly completed/cancelled/no-show
-    if (COMPLETED_STATUSES.includes(status)) return false;
-    if (activity.completed_at) return false;
-    if (activity.no_show_at) return false;
-    if (CANCELLED_STATUSES.includes(status)) return false;
+    const scheduledAtValue = meta.scheduled_at || meta.scheduled_date;
+    if (!scheduledAtValue) return false;
 
-    // Must have a scheduled date
-    const scheduledAt = meta.scheduled_at || meta.scheduled_date;
-    return !!scheduledAt;
+    const scheduledDate = new Date(scheduledAtValue);
+    if (isNaN(scheduledDate.getTime())) return false;
+
+    // 3. Check status (multi-source normalization)
+    const rowStatus = normalize(activity.status);
+    const metadataStatus = normalize(meta.activity_status || meta.status);
+
+    const isClosed = 
+      COMPLETED_STATUSES.includes(rowStatus) || 
+      COMPLETED_STATUSES.includes(metadataStatus) ||
+      !!activity.completed_at ||
+      !!activity.no_show_at ||
+      !!(activity as any).cancelled_at;
+
+    if (isClosed) return false;
+
+    return true;
   });
 
   if (openSchedules.length === 0) {
-    return { state: "none", nextSchedule: null, overdueCount: 0 };
+    return { state: "none", nextSchedule: null, overdueCount: 0, scheduledAt: null };
   }
 
-  // Calculate overdue and upcoming
-  const overdue = openSchedules
-    .filter(a => {
-      const scheduledAtStr = a.metadata.scheduled_at || a.metadata.scheduled_date;
-      return new Date(scheduledAtStr) <= now;
-    })
-    .sort((a, b) => {
-      // Oldest overdue first
-      const dateA = new Date(a.metadata.scheduled_at || a.metadata.scheduled_date).getTime();
-      const dateB = new Date(b.metadata.scheduled_at || b.metadata.scheduled_date).getTime();
-      return dateA - dateB;
-    });
+  // Map activities to their scheduled dates to avoid repeated parsing
+  const activitiesWithDates = openSchedules.map(a => ({
+    activity: a,
+    date: new Date(a.metadata!.scheduled_at || a.metadata!.scheduled_date)
+  }));
 
-  const upcoming = openSchedules
-    .filter(a => {
-      const scheduledAtStr = a.metadata.scheduled_at || a.metadata.scheduled_date;
-      return new Date(scheduledAtStr) > now;
-    })
-    .sort((a, b) => {
-      // Soonest upcoming first
-      const dateA = new Date(a.metadata.scheduled_at || a.metadata.scheduled_date).getTime();
-      const dateB = new Date(b.metadata.scheduled_at || b.metadata.scheduled_date).getTime();
-      return dateA - dateB;
-    });
+  const overdue = activitiesWithDates
+    .filter(item => item.date <= now)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  const upcoming = activitiesWithDates
+    .filter(item => item.date > now)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   if (overdue.length > 0) {
     return {
       state: "overdue",
-      nextSchedule: overdue[0], // Most overdue first
-      overdueCount: overdue.length
+      nextSchedule: overdue[0].activity,
+      overdueCount: overdue.length,
+      scheduledAt: overdue[0].date
     };
   }
 
   if (upcoming.length > 0) {
     return {
       state: "scheduled",
-      nextSchedule: upcoming[0], // Soonest future one
-      overdueCount: 0
+      nextSchedule: upcoming[0].activity,
+      overdueCount: 0,
+      scheduledAt: upcoming[0].date
     };
   }
 
-  return { state: "none", nextSchedule: null, overdueCount: 0 };
+  return { state: "none", nextSchedule: null, overdueCount: 0, scheduledAt: null };
 }

@@ -65,9 +65,11 @@ export interface ActivityItem {
 export function LeadAtividadesTab({
   lead,
   addActivity,
+  onScheduleChanged,
 }: {
   lead: CrmLead;
   addActivity: (data: any) => Promise<any>;
+  onScheduleChanged?: (leadId: string) => void;
 }) {
   const { profile } = useAuth();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -228,6 +230,7 @@ export function LeadAtividadesTab({
         resetForm();
         setShowForm(false);
         await fetchActivities();
+        if (onScheduleChanged) onScheduleChanged(lead.id);
         return;
       }
 
@@ -287,6 +290,7 @@ export function LeadAtividadesTab({
       resetForm();
       setShowForm(false);
       await fetchActivities();
+      if (onScheduleChanged) onScheduleChanged(lead.id);
     } catch (err) {
       console.error("Error creating activity:", err);
       toast.error("Erro ao criar atividade");
@@ -351,6 +355,7 @@ export function LeadAtividadesTab({
     toast.success(isComplete ? "Atividade concluída!" : "Marcada como no-show");
     setModalTarget(null);
     await fetchActivities();
+    if (onScheduleChanged) onScheduleChanged(lead.id);
 
     // Create another activity with same data
     if (createAnother) {
@@ -382,6 +387,7 @@ export function LeadAtividadesTab({
     });
     toast.success("Atividade excluída!");
     await fetchActivities();
+    if (onScheduleChanged) onScheduleChanged(lead.id);
   };
 
   const handleDuplicate = async (activity: ActivityItem) => {
@@ -395,6 +401,7 @@ export function LeadAtividadesTab({
     });
     toast.success("Atividade duplicada!");
     await fetchActivities();
+    if (onScheduleChanged) onScheduleChanged(lead.id);
   };
 
   // Filter by real status column (with fallback to metadata for old records)
