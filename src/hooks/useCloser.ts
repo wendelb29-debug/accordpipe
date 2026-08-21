@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
 import { toast } from "sonner";
 
 export interface Playbook {
@@ -8,6 +9,7 @@ export interface Playbook {
   name: string;
   description: string | null;
   is_active: boolean;
+  tenant_id: string | null;
 }
 
 export interface Script {
@@ -34,6 +36,7 @@ export interface ScriptBranch {
 export interface CloserSession {
   id: string;
   tenant_id: string;
+  workspace_id: string;
   user_id: string;
   playbook_id: string | null;
   client_name: string | null;
@@ -44,12 +47,13 @@ export interface CloserSession {
 }
 
 export function useCloser(playbookId?: string) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
+  const { activeWorkspaceId } = useWorkspaceContext();
   const queryClient = useQueryClient();
   const tenantId = profile?.company_id;
 
   const { data: playbooks, isLoading: loadingPlaybooks } = useQuery({
-    queryKey: ["closer-playbooks", tenantId],
+    queryKey: ["closer-playbooks", tenantId, activeWorkspaceId],
     queryFn: async () => {
       if (!tenantId) return [];
       const { data, error } = await supabase
@@ -65,7 +69,7 @@ export function useCloser(playbookId?: string) {
   });
 
   const { data: scripts, isLoading: loadingScripts } = useQuery({
-    queryKey: ["closer-scripts", playbookId, tenantId],
+    queryKey: ["closer-scripts", tenantId, activeWorkspaceId, playbookId],
     queryFn: async () => {
       if (!playbookId) return [];
       const { data, error } = await supabase
@@ -89,8 +93,9 @@ export function useCloser(playbookId?: string) {
         .from("closer_sessions")
         .insert([{
           ...session,
-          tenant_id: profile?.company_id,
-          user_id: profile?.id
+          tenant_id: tenantId,
+          workspace_id: activeWorkspaceId,
+          user_id: user?.id
         }])
         .select()
         .single();
