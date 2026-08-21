@@ -1323,6 +1323,20 @@ export function CrmKanbanBoard({ searchTerm, workspaceId }: CrmKanbanBoardProps)
       </div>
 
 
+      {detailLead && (
+        <CrmLeadDetailView
+          lead={detailLead}
+          onBack={() => setDetailLead(null)}
+          onUpdate={updateLead}
+          onMoveStage={moveToStage}
+          onDelete={deleteLead}
+          isAdminPipeline={false}
+          dynamicStages={dynamicStages}
+          stagesLoading={colsLoading}
+          onScheduleChanged={refreshLeadSchedule}
+        />
+      )}
+
       <KanbanQuickActionZones
         visible={!!draggedLead}
         currentStatus={draggedLead?.lead_status}
