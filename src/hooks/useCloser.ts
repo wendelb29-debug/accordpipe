@@ -88,11 +88,11 @@ export function useCloser(playbookId?: string) {
   });
 
   const createSession = useMutation({
-    mutationFn: async (session: Partial<CloserSession>) => {
+    mutationFn: async (sessionData: Partial<CloserSession>) => {
       const { data, error } = await supabase
         .from("closer_sessions")
         .insert([{
-          ...session,
+          ...sessionData,
           tenant_id: tenantId,
           workspace_id: activeWorkspaceId,
           user_id: user?.id
@@ -100,7 +100,7 @@ export function useCloser(playbookId?: string) {
         .select()
         .single();
       if (error) throw error;
-      return data as CloserSession;
+      return (data as any) as CloserSession;
     }
   });
 
