@@ -5,7 +5,7 @@ import {
   MessageSquare, PhoneCall, FileText, Activity, Trash2, Send, Loader2,
   FileSignature, Eye, Download, Copy, Image as ImageIcon, Search,
   FileSpreadsheet, Edit, MoreVertical, ThumbsUp, ThumbsDown, Paperclip,
-  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, MessageCircle
+  Link2, CopyPlus, ClipboardList, UserRoundPen, Headphones, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, MessageCircle, Users
 } from "lucide-react";
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -1165,6 +1165,7 @@ export function CrmLeadDetailView({ lead, onBack, onUpdate, onMoveStage, onDelet
           <div className={`space-y-3 text-xs ${detailsCollapsed ? 'hidden md:block' : ''}`}>
             <DetailField icon={Clock} label="Última atualização" value={new Date(lead.updated_at).toLocaleString("pt-BR")} />
             <DetailField icon={Tag} label="ID da oportunidade" value={lead.id.slice(0, 8)} />
+            <DetailField icon={Users} label="Responsável" value={lead.assigned_to_name || lead.created_by_name || "Não atribuído"} />
 
             {editing ? (
               <>

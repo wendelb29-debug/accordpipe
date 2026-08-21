@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag, Loader2, AlertCircle } from "lucide-react";
+import { Building2, User, Mail, Phone, DollarSign, StickyNote, Save, Trash2, Tag, Loader2, AlertCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CrmLead, STAGES, DynamicStage } from "@/hooks/useCrmLeads";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWorkspaceContext } from "@/contexts/WorkspaceContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CrmLeadDialogProps {
   lead: CrmLead | null;
@@ -37,6 +40,21 @@ function formatSla(stage: DynamicStage): string {
 }
 
 export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNew, dynamicStages, stagesLoading }: CrmLeadDialogProps) {
+  const { profile } = useAuth();
+  const { activeWorkspaceId: workspaceId } = useWorkspaceContext();
+  const [teamMembers, setTeamMembers] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!workspaceId || !open) return;
+    const fetchTeam = async () => {
+      const { data } = await supabase.rpc("get_workspace_team_members", {
+        p_workspace_id: workspaceId
+      });
+      if (data) setTeamMembers(data as any);
+    };
+    fetchTeam();
+  }, [workspaceId, open]);
+
   // Always use the workspace's configured kanban columns.
   // Only fall back to legacy STAGES when the caller did not provide dynamicStages at all.
   const stages: DynamicStage[] = dynamicStages !== undefined
@@ -44,21 +62,23 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
     : STAGES.map(s => ({ id: s.id, title: s.title, daysLimit: s.daysLimit, color: s.color }));
 
   const hasStages = stages.length > 0;
+  const initialStage = stages[0]?.id || "";
 
   const [form, setForm] = useState({
-    source: "Manual",
-    company_name: "",
-    contact_name: "",
-    email: "",
-    phone: "",
-    value_ps: 0,
-    value_mrr: 0,
-    stage: "",
-    notes: "",
+    source: lead?.source || "Manual",
+    company_name: lead?.company_name || "",
+    contact_name: lead?.contact_name || "",
+    email: lead?.email || "",
+    phone: lead?.phone || "",
+    value_ps: lead?.value_ps || 0,
+    value_mrr: lead?.value_mrr || 0,
+    stage: lead?.stage || initialStage,
+    notes: lead?.notes || "",
+    assigned_to_user_id: lead?.assigned_to_user_id || profile?.user_id || "",
   });
 
   useEffect(() => {
-    if (lead && !isNew) {
+    if (lead) {
       setForm({
         source: lead.source || "Manual",
         company_name: lead.company_name || "",
@@ -67,10 +87,11 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
         phone: lead.phone || "",
         value_ps: lead.value_ps || 0,
         value_mrr: lead.value_mrr || 0,
-        stage: lead.stage || "",
+        stage: lead.stage || initialStage,
         notes: lead.notes || "",
+        assigned_to_user_id: lead.assigned_to_user_id || "",
       });
-    } else if (isNew) {
+    } else {
       setForm({
         source: "Manual",
         company_name: "",
@@ -79,22 +100,21 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
         phone: "",
         value_ps: 0,
         value_mrr: 0,
-        stage: stages.length > 0 ? stages[0].id : "",
+        stage: initialStage,
         notes: "",
+        assigned_to_user_id: profile?.user_id || "",
       });
     }
-  }, [lead, isNew, open, stages.length]);
+  }, [lead, initialStage, profile?.user_id]);
 
   const handleSave = () => {
-    if (!form.company_name.trim()) return;
-    if (!form.stage) return;
-    onSave({ ...form });
+    onSave(form);
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isNew ? "Nova Oportunidade" : "Editar Oportunidade"}</DialogTitle>
           <DialogDescription>
@@ -147,9 +167,31 @@ export function CrmLeadDialog({ lead, open, onOpenChange, onSave, onDelete, isNe
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Empresa</Label>
-            <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Nome da empresa" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Empresa</Label>
+              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Nome da empresa" />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Responsável</Label>
+              <Select 
+                value={form.assigned_to_user_id} 
+                onValueChange={(val) => setForm({ ...form, assigned_to_user_id: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.length > 0 ? (
+                    teamMembers.map((m) => (
+                      <SelectItem key={m.user_id} value={m.user_id}>{m.name}</SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value={profile?.user_id || "me"}>{profile?.name || "Eu"}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

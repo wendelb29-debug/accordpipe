@@ -264,6 +264,7 @@ export function ImportarPlanilha({ workspaceId }: { workspaceId?: string | null 
           source: "Planilha",
           lead_status: "open",
           tags: getVal(lead, "Tags") ? String(getVal(lead, "Tags")).split(",").map(t => t.trim()).filter(Boolean) : [],
+          assigned_to_user_id: userId,
           created_by_user_id: userId,
           created_by_name: userName,
         };
