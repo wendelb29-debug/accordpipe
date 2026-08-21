@@ -3563,6 +3563,7 @@ export type Database = {
       }
       crm_leads: {
         Row: {
+          assigned_to_user_id: string | null
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -3603,6 +3604,7 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          assigned_to_user_id?: string | null
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -3643,6 +3645,7 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          assigned_to_user_id?: string | null
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -12368,6 +12371,14 @@ export type Database = {
       get_whatsapp_instance_token: {
         Args: { _integration_id: string }
         Returns: string
+      }
+      get_workspace_team_members: {
+        Args: { p_workspace_id: string }
+        Returns: {
+          avatar_url: string
+          name: string
+          user_id: string
+        }[]
       }
       has_active_paddle_subscription: {
         Args: { check_env?: string; tenant_uuid: string }
